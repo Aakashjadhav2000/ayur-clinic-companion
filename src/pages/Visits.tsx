@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { visits, COLOR_MAP } from "@/data/mockData";
+import { COLOR_MAP } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import VisitBadge from "@/components/VisitBadge";
+import BookingDialog from "@/components/BookingDialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 export default function Visits() {
+  const visits = useVisitsStore((s) => s.visits);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<number | null>(null);
 
@@ -19,9 +22,12 @@ export default function Visits() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-display font-bold">Visits</h1>
-        <p className="text-muted-foreground mt-1">Track all appointment visits</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Visits</h1>
+          <p className="text-muted-foreground mt-1">Track all appointment visits</p>
+        </div>
+        <BookingDialog />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
