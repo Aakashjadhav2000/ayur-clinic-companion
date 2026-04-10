@@ -192,7 +192,15 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
           </div>
 
           {/* Package Status Banner */}
-          {selectedClient && (
+          {selectedClient && isPhoneVisit ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-primary">Free Phone Consultation</p>
+                <p className="text-xs text-muted-foreground">Phone consultations are complimentary and don't count as a package visit</p>
+              </div>
+            </div>
+          ) : selectedClient ? (
             <PackageStatusBanner
               client={selectedClient}
               hasPackage={!!hasPackage}
@@ -206,7 +214,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
               selectedPackage={selectedPackage}
               onSelectPackage={setSelectedPackage}
             />
-          )}
+          ) : null}
 
           {/* Date */}
           <div className="space-y-2">
