@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getVisitsForDate, COLOR_MAP } from "@/data/mockData";
+import { COLOR_MAP } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import VisitBadge from "@/components/VisitBadge";
+import BookingDialog from "@/components/BookingDialog";
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -12,6 +14,7 @@ function getFirstDayOfWeek(year: number, month: number) {
 }
 
 export default function CalendarPage() {
+  const visits = useVisitsStore((s) => s.visits);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
 
@@ -21,9 +24,11 @@ export default function CalendarPage() {
   const firstDay = getFirstDayOfWeek(year, month);
   const monthName = currentDate.toLocaleString("default", { month: "long", year: "numeric" });
 
-  const days = [];
+  const days: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
+
+  const getVisitsForDate = (date: string) => visits.filter((v) => v.date === date);
 
   const prev = () => setCurrentDate(new Date(year, month - 1, 1));
   const next = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -32,9 +37,12 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-display font-bold">Calendar</h1>
-        <p className="text-muted-foreground mt-1">View and manage appointments</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Calendar</h1>
+          <p className="text-muted-foreground mt-1">View and manage appointments</p>
+        </div>
+        <BookingDialog defaultDate={selectedDate} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
