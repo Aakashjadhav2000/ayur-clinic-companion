@@ -70,7 +70,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
       return;
     }
 
-    if ((isPackageExhausted || noPackage) && !selectedPackage) {
+    if ((isPackageExhausted || noPackage) && !selectedPackage && !isPhoneVisit) {
       toast.error("Please select a package or payment option first");
       return;
     }
