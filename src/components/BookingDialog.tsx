@@ -50,6 +50,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const selectedType = VISIT_TYPES[Number(visitTypeIdx)];
 
   // Package tracking
+  const isPhoneVisit = selectedType.colorId === 1 || selectedType.colorId === 3;
   const hasPackage = selectedClient?.activePackage && selectedClient?.packageSize;
   const visitsUsed = selectedClient?.visitsUsed ?? 0;
   const packageSize = selectedClient?.packageSize ?? 0;
@@ -93,8 +94,11 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
       packageType: selectedPackage || selectedClient?.activePackage,
     });
 
+    // Phone consultations don't count as a package visit
+    const isPhone = selectedType.colorId === 1 || selectedType.colorId === 3;
+
     // Update visits used on client (mock — in real app this goes to DB)
-    if (hasPackage && !isPackageExhausted) {
+    if (hasPackage && !isPackageExhausted && !isPhone) {
       client.visitsUsed = (client.visitsUsed ?? 0) + 1;
     }
     if (selectedPackage) {
