@@ -7,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, COLOR_MAP } from "@/data/mockData";
+import { clients, packages as packagesList } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 
@@ -35,6 +35,8 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const [duration, setDuration] = useState("30");
   const [notes, setNotes] = useState("");
   const [clientSearch, setClientSearch] = useState("");
+  const [showPackageSelect, setShowPackageSelect] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState("");
   const addVisit = useVisitsStore((s) => s.addVisit);
 
   const filteredClients = clients.filter(
@@ -47,6 +49,15 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const selectedClient = clients.find((c) => c.id === clientId);
   const selectedType = VISIT_TYPES[Number(visitTypeIdx)];
 
+  // Package tracking
+  const hasPackage = selectedClient?.activePackage && selectedClient?.packageSize;
+  const visitsUsed = selectedClient?.visitsUsed ?? 0;
+  const packageSize = selectedClient?.packageSize ?? 0;
+  const visitsRemaining = hasPackage ? packageSize - visitsUsed : 0;
+  const isPackageExhausted = hasPackage && visitsRemaining <= 0;
+  const noPackage = selectedClient && !hasPackage;
+  const nextVisitNumber = hasPackage ? visitsUsed + 1 : undefined;
+
   const handleTypeChange = (idx: string) => {
     setVisitTypeIdx(idx);
     setDuration(String(VISIT_TYPES[Number(idx)].defaultDuration));
@@ -55,6 +66,11 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const handleSubmit = () => {
     if (!clientId || !date || !startTime) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if ((isPackageExhausted || noPackage) && !selectedPackage) {
+      toast.error("Please select a package or payment option first");
       return;
     }
 
@@ -74,7 +90,21 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
       colorId: selectedType.colorId,
       visitType: selectedType.label,
       notes,
+      packageType: selectedPackage || selectedClient?.activePackage,
     });
+
+    // Update visits used on client (mock — in real app this goes to DB)
+    if (hasPackage && !isPackageExhausted) {
+      client.visitsUsed = (client.visitsUsed ?? 0) + 1;
+    }
+    if (selectedPackage) {
+      const pkg = packagesList.find((p) => p.name === selectedPackage);
+      if (pkg) {
+        client.activePackage = pkg.name;
+        client.packageSize = pkg.size || 1;
+        client.visitsUsed = 1;
+      }
+    }
 
     toast.success(`Appointment booked for ${client.firstName} ${client.lastName}`);
     setOpen(false);
@@ -89,6 +119,8 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
     setDuration("30");
     setNotes("");
     setClientSearch("");
+    setShowPackageSelect(false);
+    setSelectedPackage("");
   };
 
   return (
@@ -119,7 +151,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
                     <p className="text-xs text-muted-foreground">{selectedClient.phone || "No phone"}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setClientId("")}>Change</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setClientId(""); setShowPackageSelect(false); setSelectedPackage(""); }}>Change</Button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -136,7 +168,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
                       filteredClients.slice(0, 8).map((c) => (
                         <button
                           key={c.id}
-                          onClick={() => { setClientId(c.id); setClientSearch(""); }}
+                          onClick={() => { setClientId(c.id); setClientSearch(""); setShowPackageSelect(false); setSelectedPackage(""); }}
                           className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
                         >
                           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
@@ -154,6 +186,23 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
               </div>
             )}
           </div>
+
+          {/* Package Status Banner */}
+          {selectedClient && (
+            <PackageStatusBanner
+              client={selectedClient}
+              hasPackage={!!hasPackage}
+              visitsUsed={visitsUsed}
+              packageSize={packageSize}
+              visitsRemaining={visitsRemaining}
+              isExhausted={!!isPackageExhausted}
+              nextVisitNumber={nextVisitNumber}
+              showPackageSelect={showPackageSelect || !!noPackage}
+              onShowPackageSelect={() => setShowPackageSelect(true)}
+              selectedPackage={selectedPackage}
+              onSelectPackage={setSelectedPackage}
+            />
+          )}
 
           {/* Date */}
           <div className="space-y-2">
@@ -216,5 +265,130 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ── Package Status Banner ── */
+interface PackageStatusBannerProps {
+  client: { firstName: string; activePackage?: string };
+  hasPackage: boolean;
+  visitsUsed: number;
+  packageSize: number;
+  visitsRemaining: number;
+  isExhausted: boolean;
+  nextVisitNumber?: number;
+  showPackageSelect: boolean;
+  onShowPackageSelect: () => void;
+  selectedPackage: string;
+  onSelectPackage: (pkg: string) => void;
+}
+
+function PackageStatusBanner({
+  client, hasPackage, visitsUsed, packageSize, visitsRemaining,
+  isExhausted, nextVisitNumber, showPackageSelect, onShowPackageSelect,
+  selectedPackage, onSelectPackage,
+}: PackageStatusBannerProps) {
+  // Active package with visits remaining
+  if (hasPackage && !isExhausted) {
+    return (
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-primary">{client.activePackage}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">
+              This will be <span className="font-bold">Visit {nextVisitNumber} of {packageSize}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {visitsRemaining} visit{visitsRemaining !== 1 ? "s" : ""} remaining after this booking
+            </p>
+          </div>
+          {/* Visit dots */}
+          <div className="flex gap-1">
+            {Array.from({ length: packageSize }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "w-3 h-3 rounded-full border-2",
+                  i < visitsUsed
+                    ? "bg-primary border-primary"
+                    : i === visitsUsed
+                    ? "bg-primary/40 border-primary animate-pulse"
+                    : "bg-muted border-border"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Last visit warning */}
+        {visitsRemaining === 1 && (
+          <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-accent/20 border border-accent/30">
+            <AlertTriangle className="w-4 h-4 text-accent" />
+            <p className="text-xs text-accent-foreground font-medium">
+              This is the last visit in the current package
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Package exhausted or no package
+  return (
+    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-destructive" />
+        <span className="text-sm font-semibold text-destructive">
+          {isExhausted ? "Package Completed" : "No Active Package"}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {isExhausted
+          ? `All ${packageSize} visits in "${client.activePackage}" have been used. Select a new package or single visit payment.`
+          : `${client.firstName} doesn't have an active package. Please select a package or single visit.`}
+      </p>
+
+      {!showPackageSelect ? (
+        <Button variant="outline" size="sm" onClick={onShowPackageSelect} className="w-full gap-2">
+          <Package className="w-4 h-4" />
+          Select Package / Payment
+        </Button>
+      ) : (
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Choose Package *</Label>
+          <div className="grid gap-2">
+            {packagesList.map((pkg) => (
+              <button
+                key={pkg.name}
+                onClick={() => onSelectPackage(pkg.name)}
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                  selectedPackage === pkg.name
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "border-border hover:bg-muted"
+                )}
+              >
+                <div>
+                  <p className="text-sm font-medium">{pkg.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {pkg.size > 0 ? `${pkg.size} visit${pkg.size !== 1 ? "s" : ""}` : pkg.category}
+                    {pkg.perSession > 0 ? ` · $${pkg.perSession}/session` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-foreground">${pkg.price}</span>
+                  {selectedPackage === pkg.name && (
+                    <CheckCircle className="w-4 h-4 text-primary" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

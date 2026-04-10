@@ -5,6 +5,8 @@ export interface Client {
   phone: string;
   totalVisits: number;
   activePackage?: string;
+  packageSize?: number;
+  visitsUsed?: number;
   lastVisit: string;
 }
 
@@ -50,16 +52,16 @@ export const packages: Package[] = [
 ];
 
 export const clients: Client[] = [
-  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, activePackage: "Pack of 5", lastVisit: "2024-12-15" },
-  { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", totalVisits: 18, activePackage: "Garbhasanskar", lastVisit: "2024-12-20" },
+  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 4, lastVisit: "2024-12-15" },
+  { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", totalVisits: 18, activePackage: "Garbhasanskar", packageSize: 1, visitsUsed: 0, lastVisit: "2024-12-20" },
   { id: "harsharan_dogra", firstName: "Harsharan", lastName: "Dogra", phone: "", totalVisits: 12, lastVisit: "2024-11-30" },
-  { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", totalVisits: 35, activePackage: "Pack of 3", lastVisit: "2025-01-05" },
-  { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", totalVisits: 8, activePackage: "Panchakarma", lastVisit: "2025-01-10" },
+  { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", totalVisits: 35, activePackage: "Pack of 3", packageSize: 3, visitsUsed: 3, lastVisit: "2025-01-05" },
+  { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", totalVisits: 8, activePackage: "Panchakarma", packageSize: 1, visitsUsed: 0, lastVisit: "2025-01-10" },
   { id: "maya_krishnan", firstName: "Maya", lastName: "Krishnan", phone: "510-555-0167", totalVisits: 42, lastVisit: "2025-01-08" },
-  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", totalVisits: 15, activePackage: "Pack of 5", lastVisit: "2025-01-12" },
+  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", totalVisits: 15, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 2, lastVisit: "2025-01-12" },
   { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", totalVisits: 27, lastVisit: "2024-12-28" },
-  { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", totalVisits: 6, activePackage: "Single Visit", lastVisit: "2025-01-14" },
-  { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", totalVisits: 19, activePackage: "Garbhasanskar", lastVisit: "2025-01-13" },
+  { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", totalVisits: 6, activePackage: "Single Visit", packageSize: 1, visitsUsed: 1, lastVisit: "2025-01-14" },
+  { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", totalVisits: 19, activePackage: "Garbhasanskar", packageSize: 1, visitsUsed: 1, lastVisit: "2025-01-13" },
 ];
 
 const visitTypes = ["Consultation", "Phone Consultation", "Therapy", "Garbhasanskar", "Panchakarma"];
