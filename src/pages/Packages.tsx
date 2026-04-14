@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { consultationPackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type Package } from "@/data/mockData";
-import { Check, X, PlusCircle, Sparkles, Hand } from "lucide-react";
+import { consultationPackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type Package, type MassagePackage, type MassageType } from "@/data/mockData";
+import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,15 +17,66 @@ const MASSAGE_DETAILS: Record<string, { description: string; duration: string; b
 };
 
 export default function Packages() {
-  const [consulPkgs, setConsulPkgs] = useState<Package[]>(consultationPackages);
-  const [massagePkgs, setMassagePkgs] = useState<Package[]>([]);
-  const [specialPkgs, setSpecialPkgs] = useState<Package[]>(specialtyPackages);
+  const [consulPkgs, setConsulPkgs] = useState<Package[]>([...consultationPackages]);
+  const [massagePkgsByType, setMassagePkgsByType] = useState<Record<MassageType, MassagePackage[]>>(() => {
+    const copy: Record<string, MassagePackage[]> = {};
+    for (const mt of MASSAGE_TYPES) {
+      copy[mt] = [...massagePackagesByType[mt]];
+    }
+    return copy as Record<MassageType, MassagePackage[]>;
+  });
+  const [customMassagePkgs, setCustomMassagePkgs] = useState<Package[]>([]);
+  const [specialPkgs, setSpecialPkgs] = useState<Package[]>([...specialtyPackages]);
+  const [editingPkg, setEditingPkg] = useState<{ key: string; name: string; price: string; size: string } | null>(null);
+  const [editingMassage, setEditingMassage] = useState<{ type: MassageType; index: number; price: string } | null>(null);
 
   const handleAdd = (pkg: Package, section: string) => {
     if (section === "consultation") setConsulPkgs((p) => [...p, pkg]);
-    else if (section === "massage") setMassagePkgs((p) => [...p, pkg]);
+    else if (section === "massage") setCustomMassagePkgs((p) => [...p, pkg]);
     else setSpecialPkgs((p) => [...p, pkg]);
     toast.success(`"${pkg.name}" added`);
+  };
+
+  const handleEditSave = (section: string) => {
+    if (!editingPkg) return;
+    const update = (pkgs: Package[]) =>
+      pkgs.map((p) => p.name === editingPkg.key ? {
+        ...p,
+        name: editingPkg.name || p.name,
+        price: Number(editingPkg.price) || p.price,
+        size: Number(editingPkg.size) ?? p.size,
+        perSession: (Number(editingPkg.size) || p.size) > 0 ? Math.round((Number(editingPkg.price) || p.price) / (Number(editingPkg.size) || p.size)) : 0,
+      } : p);
+    if (section === "consultation") setConsulPkgs(update);
+    else if (section === "massage") setCustomMassagePkgs(update);
+    else setSpecialPkgs(update);
+    toast.success("Package updated");
+    setEditingPkg(null);
+  };
+
+  const handleDeletePkg = (name: string, section: string) => {
+    if (section === "consultation") setConsulPkgs((p) => p.filter((x) => x.name !== name));
+    else if (section === "massage") setCustomMassagePkgs((p) => p.filter((x) => x.name !== name));
+    else setSpecialPkgs((p) => p.filter((x) => x.name !== name));
+    toast.success("Package removed");
+  };
+
+  const handleMassagePriceSave = () => {
+    if (!editingMassage) return;
+    setMassagePkgsByType((prev) => {
+      const copy = { ...prev };
+      copy[editingMassage.type] = [...copy[editingMassage.type]];
+      const pkg = copy[editingMassage.type][editingMassage.index];
+      const newPrice = Number(editingMassage.price) || pkg.price;
+      copy[editingMassage.type][editingMassage.index] = {
+        ...pkg,
+        price: newPrice,
+        perSession: pkg.size > 0 ? Math.round(newPrice / pkg.size) : 0,
+      };
+      return copy;
+    });
+    toast.success("Price updated");
+    setEditingMassage(null);
   };
 
   return (
@@ -35,7 +86,6 @@ export default function Packages() {
         <p className="text-muted-foreground mt-1">Treatment packages, pricing & services</p>
       </div>
 
-      {/* Main Tabs: Consultation | Massages | Specialty */}
       <Tabs defaultValue="consultation" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="consultation" className="gap-2">
@@ -58,7 +108,16 @@ export default function Packages() {
             </div>
             <AddPackageDialog section="consultation" onAdd={(pkg) => handleAdd(pkg, "consultation")} />
           </div>
-          <PackageGrid packages={consulPkgs} />
+          <EditablePackageGrid
+            packages={consulPkgs}
+            section="consultation"
+            editingPkg={editingPkg}
+            onStartEdit={(p) => setEditingPkg({ key: p.name, name: p.name, price: String(p.price), size: String(p.size) })}
+            onCancelEdit={() => setEditingPkg(null)}
+            onSaveEdit={() => handleEditSave("consultation")}
+            onEditChange={(field, val) => editingPkg && setEditingPkg({ ...editingPkg, [field]: val })}
+            onDelete={(name) => handleDeletePkg(name, "consultation")}
+          />
         </TabsContent>
 
         {/* ── MASSAGES TAB ── */}
@@ -66,18 +125,17 @@ export default function Packages() {
           <Tabs defaultValue="types" className="space-y-4">
             <TabsList>
               <TabsTrigger value="types">Massage Types</TabsTrigger>
-              <TabsTrigger value="packages">Massage Packages</TabsTrigger>
+              <TabsTrigger value="packages">Custom Packages</TabsTrigger>
             </TabsList>
 
-            {/* Massage Types with Pricing Sub-tab */}
             <TabsContent value="types" className="space-y-6">
               <div>
                 <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
-                <p className="text-sm text-muted-foreground">Each massage type has its own session pricing</p>
+                <p className="text-sm text-muted-foreground">Click the edit icon to change pricing</p>
               </div>
               {MASSAGE_TYPES.map((mt) => {
                 const detail = MASSAGE_DETAILS[mt];
-                const pkgs = massagePackagesByType[mt];
+                const pkgs = massagePkgsByType[mt];
                 return (
                   <div key={mt} className="bg-card rounded-lg border border-border p-5 space-y-4">
                     <div className="flex items-center gap-3">
@@ -90,22 +148,51 @@ export default function Packages() {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {pkgs.map((pkg) => (
-                        <div key={pkg.name} className="p-4 rounded-lg bg-muted/50 border border-border">
-                          <p className="text-sm font-medium">{pkg.size === 1 ? "Single Session" : `Pack of ${pkg.size}`}</p>
-                          <p className="text-2xl font-bold text-primary mt-1">${pkg.price}</p>
-                          {pkg.perSession > 0 && pkg.size > 1 && (
-                            <p className="text-xs text-muted-foreground">${pkg.perSession}/session</p>
-                          )}
-                        </div>
-                      ))}
+                      {pkgs.map((pkg, idx) => {
+                        const isEditing = editingMassage?.type === mt && editingMassage?.index === idx;
+                        return (
+                          <div key={pkg.name} className="p-4 rounded-lg bg-muted/50 border border-border relative group">
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {isEditing ? (
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleMassagePriceSave}>
+                                    <Save className="w-3 h-3 text-primary" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingMassage(null)}>
+                                    <XCircle className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingMassage({ type: mt, index: idx, price: String(pkg.price) })}>
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium">{pkg.size === 1 ? "Single Session" : `Pack of ${pkg.size}`}</p>
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={editingMassage!.price}
+                                onChange={(e) => setEditingMassage({ ...editingMassage!, price: e.target.value })}
+                                className="mt-1 h-8 text-lg font-bold w-24"
+                                autoFocus
+                                onKeyDown={(e) => e.key === "Enter" && handleMassagePriceSave()}
+                              />
+                            ) : (
+                              <p className="text-2xl font-bold text-primary mt-1">${pkg.price}</p>
+                            )}
+                            {pkg.perSession > 0 && pkg.size > 1 && (
+                              <p className="text-xs text-muted-foreground">${pkg.perSession}/session</p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })}
             </TabsContent>
 
-            {/* Custom Packages Sub-tab */}
             <TabsContent value="packages" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -114,7 +201,16 @@ export default function Packages() {
                 </div>
                 <AddPackageDialog section="massage" onAdd={(pkg) => handleAdd(pkg, "massage")} />
               </div>
-              <PackageGrid packages={massagePkgs} />
+              <EditablePackageGrid
+                packages={customMassagePkgs}
+                section="massage"
+                editingPkg={editingPkg}
+                onStartEdit={(p) => setEditingPkg({ key: p.name, name: p.name, price: String(p.price), size: String(p.size) })}
+                onCancelEdit={() => setEditingPkg(null)}
+                onSaveEdit={() => handleEditSave("massage")}
+                onEditChange={(field, val) => editingPkg && setEditingPkg({ ...editingPkg, [field]: val })}
+                onDelete={(name) => handleDeletePkg(name, "massage")}
+              />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -128,7 +224,16 @@ export default function Packages() {
             </div>
             <AddPackageDialog section="specialty" onAdd={(pkg) => handleAdd(pkg, "specialty")} />
           </div>
-          <PackageGrid packages={specialPkgs} />
+          <EditablePackageGrid
+            packages={specialPkgs}
+            section="specialty"
+            editingPkg={editingPkg}
+            onStartEdit={(p) => setEditingPkg({ key: p.name, name: p.name, price: String(p.price), size: String(p.size) })}
+            onCancelEdit={() => setEditingPkg(null)}
+            onSaveEdit={() => handleEditSave("specialty")}
+            onEditChange={(field, val) => editingPkg && setEditingPkg({ ...editingPkg, [field]: val })}
+            onDelete={(name) => handleDeletePkg(name, "specialty")}
+          />
         </TabsContent>
       </Tabs>
 
@@ -155,34 +260,90 @@ export default function Packages() {
   );
 }
 
-/* ── Package Grid ── */
-function PackageGrid({ packages }: { packages: Package[] }) {
+/* ── Editable Package Grid ── */
+interface EditablePackageGridProps {
+  packages: Package[];
+  section: string;
+  editingPkg: { key: string; name: string; price: string; size: string } | null;
+  onStartEdit: (pkg: Package) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onEditChange: (field: string, val: string) => void;
+  onDelete: (name: string) => void;
+}
+
+function EditablePackageGrid({ packages, section, editingPkg, onStartEdit, onCancelEdit, onSaveEdit, onEditChange, onDelete }: EditablePackageGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {packages.map((pkg) => (
-        <div key={pkg.name} className="bg-card rounded-lg border border-border p-5 hover:shadow-md transition-shadow">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">{pkg.category}</span>
-          <h3 className="font-display text-lg font-semibold mt-1">{pkg.name}</h3>
-          <div className="mt-3 mb-2">
-            <span className="text-3xl font-bold text-primary">${pkg.price.toLocaleString()}</span>
-            {pkg.size > 0 && <span className="text-muted-foreground text-sm ml-1">/ {pkg.size} sessions</span>}
-          </div>
-          {pkg.perSession > 0 && (
-            <p className="text-sm text-muted-foreground mb-3">${pkg.perSession.toFixed(0)} per session</p>
-          )}
-          <div className="flex items-center gap-2 text-sm">
-            {pkg.complimentary ? (
-              <span className="flex items-center gap-1 text-secondary-foreground">
-                <Check className="w-4 h-4 text-green-600" /> Complimentary visit included
-              </span>
+      {packages.map((pkg) => {
+        const isEditing = editingPkg?.key === pkg.name;
+        return (
+          <div key={pkg.name} className="bg-card rounded-lg border border-border p-5 hover:shadow-md transition-shadow relative group">
+            {/* Action buttons */}
+            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {isEditing ? (
+                <>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onSaveEdit}>
+                    <Save className="w-3.5 h-3.5 text-primary" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCancelEdit}>
+                    <XCircle className="w-3.5 h-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStartEdit(pkg)}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(pkg.name)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">{pkg.category}</span>
+
+            {isEditing ? (
+              <div className="space-y-2 mt-2">
+                <Input value={editingPkg!.name} onChange={(e) => onEditChange("name", e.target.value)} className="h-8 text-sm font-semibold" placeholder="Name" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Price ($)</Label>
+                    <Input type="number" value={editingPkg!.price} onChange={(e) => onEditChange("price", e.target.value)} className="h-8 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sessions</Label>
+                    <Input type="number" value={editingPkg!.size} onChange={(e) => onEditChange("size", e.target.value)} className="h-8 text-sm" />
+                  </div>
+                </div>
+              </div>
             ) : (
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <X className="w-4 h-4" /> No complimentary visit
-              </span>
+              <>
+                <h3 className="font-display text-lg font-semibold mt-1">{pkg.name}</h3>
+                <div className="mt-3 mb-2">
+                  <span className="text-3xl font-bold text-primary">${pkg.price.toLocaleString()}</span>
+                  {pkg.size > 0 && <span className="text-muted-foreground text-sm ml-1">/ {pkg.size} sessions</span>}
+                </div>
+                {pkg.perSession > 0 && (
+                  <p className="text-sm text-muted-foreground mb-3">${pkg.perSession.toFixed(0)} per session</p>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  {pkg.complimentary ? (
+                    <span className="flex items-center gap-1 text-secondary-foreground">
+                      <Check className="w-4 h-4 text-green-600" /> Complimentary visit included
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <X className="w-4 h-4" /> No complimentary visit
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -242,3 +403,5 @@ function AddPackageDialog({ section, onAdd }: { section: string; onAdd: (pkg: Pa
     </Dialog>
   );
 }
+
+
