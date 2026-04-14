@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, consultationPackages, massagePackages, specialtyPackages, specialtyPrograms, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType, type ProgramComponent } from "@/data/mockData";
+import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
