@@ -162,8 +162,13 @@ export const COLOR_MAP: Record<number, { label: string; color: string; bg: strin
 };
 
 let pkgIdCounter = 100;
-function makePkg(name: string, size: number, used: number, price?: number): ClientPackage {
-  return { id: `pkg_${pkgIdCounter++}`, name, size, visitsUsed: used, price };
+function makePkg(name: string, size: number, used: number, price?: number, ownerId?: string): ClientPackage {
+  const isComplimentary = name.includes("Pack of 5");
+  return {
+    id: `pkg_${pkgIdCounter++}`,
+    name, size, visitsUsed: used, price,
+    ...(isComplimentary ? { complimentaryTotal: 1, complimentaryUsed: 0, ownerClientId: ownerId } : {}),
+  };
 }
 
 export const clients: Client[] = [
