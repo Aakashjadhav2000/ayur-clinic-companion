@@ -505,7 +505,12 @@ function PackageGrid({
         </button>
       ) : (
         <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
-          <p className="text-xs font-medium text-primary">Custom Package</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-primary">Custom Package</p>
+            <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground px-2" onClick={onHideCustom}>
+              ✕ Cancel
+            </Button>
+          </div>
           <Input placeholder="Package name" value={customName} onChange={(e) => onCustomName(e.target.value)} className="h-8 text-sm" />
           <div className="grid grid-cols-2 gap-2">
             <Input placeholder="Price ($)" type="number" value={customPrice} onChange={(e) => onCustomPrice(e.target.value)} className="h-8 text-sm" />
