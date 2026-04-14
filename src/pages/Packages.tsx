@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { consultationPackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type Package, type MassagePackage, type MassageType } from "@/data/mockData";
-import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle, Trash2, Clock } from "lucide-react";
+import { consultationPackages, specialtyPackages, specialtyPrograms, MASSAGE_TYPES, massagePackagesByType, type Package, type MassagePackage, type MassageType, type SpecialtyProgram, type ProgramComponent } from "@/data/mockData";
+import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle, Trash2, Clock, Infinity, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,11 @@ export default function Packages() {
   });
   const [customMassagePkgs, setCustomMassagePkgs] = useState<Package[]>([]);
   const [specialPkgs, setSpecialPkgs] = useState<Package[]>([...specialtyPackages]);
+  const [programs, setPrograms] = useState<SpecialtyProgram[]>([...specialtyPrograms]);
+  const [editingProgram, setEditingProgram] = useState<string | null>(null);
+  const [editProgramData, setEditProgramData] = useState<Partial<SpecialtyProgram>>({});
+  const [addProgramOpen, setAddProgramOpen] = useState(false);
+  const [newProgram, setNewProgram] = useState<Partial<SpecialtyProgram>>({ name: "", description: "", price: 0, mode: "unlimited", duration: 45, components: [] });
   const [editingPkg, setEditingPkg] = useState<{ key: string; name: string; price: string; size: string; duration: string } | null>(null);
   const [editingMassage, setEditingMassage] = useState<{ type: string; index: number; price: string; size: string; duration: string } | null>(null);
   const [addTypeOpen, setAddTypeOpen] = useState(false);
@@ -347,24 +352,144 @@ export default function Packages() {
         </TabsContent>
 
         {/* ── SPECIALTY TAB ── */}
-        <TabsContent value="specialty" className="space-y-4">
+        <TabsContent value="specialty" className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-display text-xl font-semibold">Specialty Programs</h2>
-              <p className="text-sm text-muted-foreground">Garbhasanskar, Panchakarma & more</p>
+              <p className="text-sm text-muted-foreground">Garbhasanskar, Panchakarma & custom programs</p>
             </div>
-            <AddPackageDialog section="specialty" onAdd={(pkg) => handleAdd(pkg, "specialty")} />
+            <Dialog open={addProgramOpen} onOpenChange={setAddProgramOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2"><PlusCircle className="w-4 h-4" /> Add Program</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="font-display">Add Specialty Program</DialogTitle>
+                </DialogHeader>
+                <AddProgramForm
+                  program={newProgram}
+                  onChange={setNewProgram}
+                  allMassageTypes={allMassageTypes}
+                  onSubmit={() => {
+                    if (!newProgram.name?.trim()) { toast.error("Name required"); return; }
+                    const prog: SpecialtyProgram = {
+                      id: newProgram.name!.toLowerCase().replace(/\s+/g, "_"),
+                      name: newProgram.name!.trim(),
+                      description: newProgram.description || "",
+                      price: Number(newProgram.price) || 0,
+                      mode: newProgram.mode || "unlimited",
+                      duration: newProgram.mode === "unlimited" ? (Number(newProgram.duration) || 45) : undefined,
+                      components: newProgram.mode === "combo" ? (newProgram.components || []) : undefined,
+                    };
+                    setPrograms((p) => [...p, prog]);
+                    toast.success(`"${prog.name}" program added`);
+                    setNewProgram({ name: "", description: "", price: 0, mode: "unlimited", duration: 45, components: [] });
+                    setAddProgramOpen(false);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
-          <EditablePackageGrid
-            packages={specialPkgs}
-            section="specialty"
-            editingPkg={editingPkg}
-            onStartEdit={(p) => setEditingPkg({ key: p.name, name: p.name, price: String(p.price), size: String(p.size), duration: String(p.duration || "") })}
-            onCancelEdit={() => setEditingPkg(null)}
-            onSaveEdit={() => handleEditSave("specialty")}
-            onEditChange={(field, val) => editingPkg && setEditingPkg({ ...editingPkg, [field]: val })}
-            onDelete={(name) => handleDeletePkg(name, "specialty")}
-          />
+
+          {programs.map((prog) => {
+            const isEditing = editingProgram === prog.id;
+            return (
+              <div key={prog.id} className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      prog.mode === "unlimited" ? "bg-amber-100" : "bg-orange-100"
+                    )}>
+                      {prog.mode === "unlimited" ? <Infinity className="w-5 h-5 text-amber-700" /> : <Layers className="w-5 h-5 text-orange-700" />}
+                    </div>
+                    <div>
+                      <h3 className="font-display text-lg font-semibold">{prog.name}</h3>
+                      <p className="text-xs text-muted-foreground">{prog.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {isEditing ? (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                          setPrograms((prev) => prev.map((p) => p.id === prog.id ? { ...p, ...editProgramData } as SpecialtyProgram : p));
+                          toast.success("Program updated");
+                          setEditingProgram(null);
+                        }}>
+                          <Save className="w-4 h-4 text-primary" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingProgram(null)}>
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingProgram(prog.id); setEditProgramData({ ...prog }); }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { setPrograms((p) => p.filter((x) => x.id !== prog.id)); toast.success("Program removed"); }}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {isEditing ? (
+                  <AddProgramForm
+                    program={editProgramData}
+                    onChange={setEditProgramData}
+                    allMassageTypes={allMassageTypes}
+                    isEdit
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-2xl font-bold text-primary">${prog.price.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Program price</p>
+                      </div>
+                      <div className="h-10 border-l border-border" />
+                      <div>
+                        <p className="text-sm font-medium flex items-center gap-1">
+                          {prog.mode === "unlimited" ? (
+                            <><Infinity className="w-4 h-4 text-amber-600" /> Unlimited Sessions</>
+                          ) : (
+                            <><Layers className="w-4 h-4 text-orange-600" /> Combination Program</>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {prog.mode === "unlimited"
+                            ? `${prog.duration} min per session · Runs until completed`
+                            : `${prog.components?.reduce((s, c) => s + c.sessions, 0) || 0} total sessions`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Combo components */}
+                    {prog.mode === "combo" && prog.components && prog.components.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Program Components</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {prog.components.map((comp, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
+                              <div>
+                                <p className="text-sm font-medium">{comp.type}</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> {comp.duration} min
+                                </p>
+                              </div>
+                              <span className="text-sm font-semibold text-primary">{comp.sessions}x</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </TabsContent>
       </Tabs>
 
@@ -572,5 +697,127 @@ function AddPackageDialog({ section, massageTypeName, onAdd }: { section: string
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ── Add/Edit Program Form ── */
+function AddProgramForm({ program, onChange, allMassageTypes, isEdit, onSubmit }: {
+  program: Partial<SpecialtyProgram>;
+  onChange: (p: Partial<SpecialtyProgram>) => void;
+  allMassageTypes: string[];
+  isEdit?: boolean;
+  onSubmit?: () => void;
+}) {
+  const componentTypes = ["Consultation (Pre)", "Consultation (Post)", "Consultation", ...allMassageTypes];
+
+  const addComponent = () => {
+    onChange({ ...program, components: [...(program.components || []), { type: "Consultation", sessions: 1, duration: 30 }] });
+  };
+
+  const updateComponent = (idx: number, field: keyof ProgramComponent, val: string | number) => {
+    const comps = [...(program.components || [])];
+    comps[idx] = { ...comps[idx], [field]: typeof val === "string" && field !== "type" ? Number(val) : val };
+    onChange({ ...program, components: comps });
+  };
+
+  const removeComponent = (idx: number) => {
+    onChange({ ...program, components: (program.components || []).filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <div className="space-y-4 pt-2">
+      {!isEdit && (
+        <>
+          <div>
+            <Label>Program Name *</Label>
+            <Input placeholder="e.g. Panchakarma Plus" value={program.name || ""} onChange={(e) => onChange({ ...program, name: e.target.value })} />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Input placeholder="Brief description" value={program.description || ""} onChange={(e) => onChange({ ...program, description: e.target.value })} />
+          </div>
+        </>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Price ($)</Label>
+          <Input type="number" value={program.price || ""} onChange={(e) => onChange({ ...program, price: Number(e.target.value) })} />
+        </div>
+        <div>
+          <Label>Program Type</Label>
+          <Select value={program.mode || "unlimited"} onValueChange={(v) => onChange({ ...program, mode: v as "unlimited" | "combo" })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unlimited">Unlimited Sessions</SelectItem>
+              <SelectItem value="combo">Combination Program</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {program.mode === "unlimited" && (
+        <div>
+          <Label>Session Duration (min)</Label>
+          <Select value={String(program.duration || 45)} onValueChange={(v) => onChange({ ...program, duration: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {DURATION_OPTIONS.map((d) => (
+                <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">Sessions continue until you manually mark the program as completed</p>
+        </div>
+      )}
+
+      {program.mode === "combo" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Program Components</Label>
+            <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={addComponent}>
+              <PlusCircle className="w-3 h-3" /> Add Component
+            </Button>
+          </div>
+          {(program.components || []).map((comp, idx) => (
+            <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
+              <Select value={comp.type} onValueChange={(v) => updateComponent(idx, "type", v)}>
+                <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {componentTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Input type="number" min={1} value={comp.sessions} onChange={(e) => updateComponent(idx, "sessions", e.target.value)} className="h-8 w-16 text-xs" />
+                <span className="text-xs text-muted-foreground">×</span>
+              </div>
+              <Select value={String(comp.duration)} onValueChange={(v) => updateComponent(idx, "duration", v)}>
+                <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map((d) => (
+                    <SelectItem key={d} value={String(d)}>{d}m</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeComponent(idx)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+          {(program.components || []).length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Total: {program.components!.reduce((s, c) => s + c.sessions, 0)} sessions
+            </p>
+          )}
+        </div>
+      )}
+
+      {onSubmit && (
+        <Button onClick={onSubmit} className="w-full" disabled={!program.name?.trim()}>
+          {isEdit ? "Save Program" : "Add Program"}
+        </Button>
+      )}
+    </div>
   );
 }

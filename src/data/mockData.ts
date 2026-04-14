@@ -44,6 +44,25 @@ export interface Package {
   duration?: number; // session duration in minutes
 }
 
+// Program types for specialty treatments
+export type ProgramMode = "unlimited" | "combo";
+
+export interface ProgramComponent {
+  type: string; // e.g. "Abhyanga", "Consultation"
+  sessions: number;
+  duration: number; // minutes
+}
+
+export interface SpecialtyProgram {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  mode: ProgramMode;
+  duration?: number; // per-session duration for unlimited programs
+  components?: ProgramComponent[]; // for combo programs
+}
+
 export const consultationPackages: Package[] = [
   { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false, duration: 30 },
   { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false, duration: 30 },
@@ -92,6 +111,30 @@ export function getMassagePackages(type: MassageType): MassagePackage[] {
 export const specialtyPackages: Package[] = [
   { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false, duration: 45 },
   { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false, duration: 60 },
+];
+
+export const specialtyPrograms: SpecialtyProgram[] = [
+  {
+    id: "garbhasanskar",
+    name: "Garbhasanskar",
+    description: "Prenatal wellness program — runs until pregnancy is completed. Sessions are unlimited.",
+    price: 1400,
+    mode: "unlimited",
+    duration: 45,
+  },
+  {
+    id: "panchakarma",
+    name: "Panchakarma",
+    description: "Full body cleansing program with a combination of therapies and consultations.",
+    price: 2500,
+    mode: "combo",
+    components: [
+      { type: "Consultation (Pre)", sessions: 1, duration: 30 },
+      { type: "Abhyanga", sessions: 3, duration: 60 },
+      { type: "Shirodhara", sessions: 2, duration: 45 },
+      { type: "Consultation (Post)", sessions: 1, duration: 30 },
+    ],
+  },
 ];
 
 export const packages: Package[] = [...consultationPackages, ...massagePackages, ...specialtyPackages];
