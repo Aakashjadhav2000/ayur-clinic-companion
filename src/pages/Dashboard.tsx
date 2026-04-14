@@ -2,6 +2,7 @@ import { Users, CalendarDays, Package, ClipboardList } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import VisitBadge from "@/components/VisitBadge";
 import BookingDialog from "@/components/BookingDialog";
+import AssignPackageDialog from "@/components/AssignPackageDialog";
 import { clients } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 
@@ -18,7 +19,10 @@ export default function Dashboard() {
           <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome to your clinic overview</p>
         </div>
-        <BookingDialog />
+        <div className="flex gap-2">
+          <AssignPackageDialog />
+          <BookingDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
