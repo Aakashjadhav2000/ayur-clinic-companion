@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Phone, Calendar, Package, History, Clock, ExternalLink, Pencil, Trash2, Save, XCircle } from "lucide-react";
+import { Search, Phone, Mail, Calendar, Package, History, Clock, ExternalLink, Pencil, Trash2, Save, XCircle } from "lucide-react";
 import { clients, getClientVisits, getActivePackages } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,6 +71,11 @@ function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onR
           {selected.phone && (
             <p className="text-sm text-muted-foreground flex items-center gap-1">
               <Phone className="w-3 h-3" /> {selected.phone}
+            </p>
+          )}
+          {selected.email && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Mail className="w-3 h-3" /> {selected.email}
             </p>
           )}
         </div>
@@ -266,7 +271,8 @@ export default function Clients() {
     (c) =>
       c.firstName.toLowerCase().includes(search.toLowerCase()) ||
       c.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone.includes(search)
+      c.phone.includes(search) ||
+      (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
   );
 
   const today = new Date().toISOString().split("T")[0];
