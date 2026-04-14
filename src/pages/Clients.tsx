@@ -3,10 +3,12 @@ import { Search, Phone } from "lucide-react";
 import { clients, getClientVisits } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
 import VisitBadge from "@/components/VisitBadge";
+import AddClientDialog from "@/components/AddClientDialog";
 
 export default function Clients() {
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [, forceUpdate] = useState(0);
 
   const filtered = clients.filter(
     (c) =>
@@ -20,9 +22,12 @@ export default function Clients() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-display font-bold">Clients</h1>
-        <p className="text-muted-foreground mt-1">Manage your patient directory</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Clients</h1>
+          <p className="text-muted-foreground mt-1">Manage your patient directory</p>
+        </div>
+        <AddClientDialog onClientAdded={() => forceUpdate((n) => n + 1)} />
       </div>
 
       <div className="relative max-w-md">
