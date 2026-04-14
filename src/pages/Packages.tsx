@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, type Package } from "@/data/mockData";
+import { consultationPackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type Package } from "@/data/mockData";
 import { Check, X, PlusCircle, Sparkles, Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,40 +69,48 @@ export default function Packages() {
               <TabsTrigger value="packages">Massage Packages</TabsTrigger>
             </TabsList>
 
-            {/* Massage Types Sub-tab */}
-            <TabsContent value="types" className="space-y-4">
+            {/* Massage Types with Pricing Sub-tab */}
+            <TabsContent value="types" className="space-y-6">
               <div>
-                <h2 className="font-display text-xl font-semibold">Massage Types</h2>
-                <p className="text-sm text-muted-foreground">Available massage & therapy treatments</p>
+                <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
+                <p className="text-sm text-muted-foreground">Each massage type has its own session pricing</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {MASSAGE_TYPES.map((mt) => {
-                  const detail = MASSAGE_DETAILS[mt];
-                  return (
-                    <div key={mt} className="bg-card rounded-lg border border-border p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-sage/30 flex items-center justify-center">
-                          <Hand className="w-5 h-5 text-sage-foreground" />
-                        </div>
-                        <div>
-                          <h3 className="font-display text-lg font-semibold">{mt}</h3>
-                          <p className="text-xs text-muted-foreground">{detail?.duration}</p>
-                        </div>
+              {MASSAGE_TYPES.map((mt) => {
+                const detail = MASSAGE_DETAILS[mt];
+                const pkgs = massagePackagesByType[mt];
+                return (
+                  <div key={mt} className="bg-card rounded-lg border border-border p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-sage/30 flex items-center justify-center">
+                        <Hand className="w-5 h-5 text-sage-foreground" />
                       </div>
-                      <p className="text-sm text-foreground mb-2">{detail?.description}</p>
-                      <p className="text-xs text-muted-foreground"><span className="font-medium">Benefits:</span> {detail?.benefits}</p>
+                      <div>
+                        <h3 className="font-display text-lg font-semibold">{mt}</h3>
+                        <p className="text-xs text-muted-foreground">{detail?.duration} · {detail?.description}</p>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {pkgs.map((pkg) => (
+                        <div key={pkg.name} className="p-4 rounded-lg bg-muted/50 border border-border">
+                          <p className="text-sm font-medium">{pkg.size === 1 ? "Single Session" : `Pack of ${pkg.size}`}</p>
+                          <p className="text-2xl font-bold text-primary mt-1">${pkg.price}</p>
+                          {pkg.perSession > 0 && pkg.size > 1 && (
+                            <p className="text-xs text-muted-foreground">${pkg.perSession}/session</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </TabsContent>
 
-            {/* Massage Packages Sub-tab */}
+            {/* Custom Packages Sub-tab */}
             <TabsContent value="packages" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-display text-xl font-semibold">Massage Packages</h2>
-                  <p className="text-sm text-muted-foreground">Session bundles for massage treatments</p>
+                  <h2 className="font-display text-xl font-semibold">Custom Massage Packages</h2>
+                  <p className="text-sm text-muted-foreground">Add custom session bundles</p>
                 </div>
                 <AddPackageDialog section="massage" onAdd={(pkg) => handleAdd(pkg, "massage")} />
               </div>
