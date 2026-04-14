@@ -79,6 +79,10 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
     setSelectedPkgId("");
     setSelectedNewPkg("");
     setShowCustomPackage(false);
+    // Reset panchakarma components when switching to Panchakarma
+    if (VISIT_TYPES[Number(idx)].colorId === 10 && panchakarmaProgram?.components) {
+      setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
+    }
   };
 
   const handleSubmit = () => {
