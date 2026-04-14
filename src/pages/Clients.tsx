@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Search, Phone, Calendar, Package, History, Clock, ExternalLink } from "lucide-react";
+import { Search, Phone, Calendar, Package, History, Clock, ExternalLink, Pencil, Trash2, Save, XCircle } from "lucide-react";
 import { clients, getClientVisits, getActivePackages } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import VisitBadge from "@/components/VisitBadge";
 import AddClientDialog from "@/components/AddClientDialog";
 import AssignPackageDialog from "@/components/AssignPackageDialog";
+import { toast } from "sonner";
 
 function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onRefresh }: {
   selected: typeof clients[0];
