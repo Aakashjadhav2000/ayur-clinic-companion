@@ -119,7 +119,7 @@ export default function Packages() {
     setEditingMassage(null);
   };
 
-  const handleDeleteMassagePkg = (mt: MassageType, idx: number) => {
+  const handleDeleteMassagePkg = (mt: string, idx: number) => {
     setMassagePkgsByType((prev) => ({
       ...prev,
       [mt]: prev[mt].filter((_, i) => i !== idx),
