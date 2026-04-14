@@ -132,8 +132,24 @@ export default function Employees() {
                 <Label>Password *</Label>
                 <Input type="password" placeholder="Min 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
+              <div className="space-y-2">
+                <Label>Role *</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "admin" | "frontdesk")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="frontdesk">Front Desk</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {newRole === "admin" ? "Full access — can manage employees and edit packages" : "Can view and use the system but cannot modify packages or manage employees"}
+                </p>
+              </div>
               <Button onClick={handleCreateEmployee} className="w-full" disabled={creating}>
                 {creating ? "Creating…" : "Create Employee"}
+              </Button>
               </Button>
             </div>
           </DialogContent>
