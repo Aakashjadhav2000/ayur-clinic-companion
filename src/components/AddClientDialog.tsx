@@ -17,6 +17,7 @@ export default function AddClientDialog({ trigger, onClientAdded }: AddClientDia
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleSubmit = () => {
     const trimFirst = firstName.trim();
@@ -42,6 +43,7 @@ export default function AddClientDialog({ trigger, onClientAdded }: AddClientDia
       firstName: trimFirst,
       lastName: trimLast,
       phone: phone.trim(),
+      email: email.trim(),
       totalVisits: 0,
       packages: [],
       lastVisit: new Date().toISOString().split("T")[0],
@@ -54,6 +56,7 @@ export default function AddClientDialog({ trigger, onClientAdded }: AddClientDia
     setFirstName("");
     setLastName("");
     setPhone("");
+    setEmail("");
   };
 
   return (
@@ -83,6 +86,10 @@ export default function AddClientDialog({ trigger, onClientAdded }: AddClientDia
           <div className="space-y-2">
             <Label>Phone</Label>
             <Input placeholder="e.g. 201-555-0142" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input type="email" placeholder="e.g. client@email.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={100} />
           </div>
           <Button onClick={handleSubmit} className="w-full">Add Client</Button>
         </div>
