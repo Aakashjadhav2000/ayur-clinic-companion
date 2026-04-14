@@ -100,12 +100,22 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
       if (isPanchakarma) {
         const totalSessions = panchaComps.reduce((s, c) => s + c.sessions, 0);
         const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type}`).join(", ");
+        // Build tracked components
+        const trackedComponents: PackageComponent[] = panchaComps
+          .filter((c) => c.sessions > 0)
+          .map((c) => ({
+            type: c.type,
+            total: c.sessions,
+            used: 0,
+            duration: c.duration,
+          }));
         newPkg = {
           id: `pkg_${pkgIdCounter++}`,
           name: `Panchakarma (${compSummary})`,
           size: totalSessions,
           visitsUsed: 0,
           price: panchakarmaProgram?.price || 2500,
+          components: trackedComponents,
         };
         toast.success(`Panchakarma program (${totalSessions} sessions) added to ${client.firstName}`);
       } else {
