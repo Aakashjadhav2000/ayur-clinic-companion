@@ -21,17 +21,21 @@ const DURATION_OPTIONS = [15, 20, 30, 45, 60, 90, 120];
 
 export default function Packages() {
   const [consulPkgs, setConsulPkgs] = useState<Package[]>([...consultationPackages]);
-  const [massagePkgsByType, setMassagePkgsByType] = useState<Record<MassageType, MassagePackage[]>>(() => {
+  const [allMassageTypes, setAllMassageTypes] = useState<string[]>([...MASSAGE_TYPES]);
+  const [massageDetails, setMassageDetails] = useState<Record<string, { description: string; duration: string; benefits: string }>>({ ...MASSAGE_DETAILS });
+  const [massagePkgsByType, setMassagePkgsByType] = useState<Record<string, MassagePackage[]>>(() => {
     const copy: Record<string, MassagePackage[]> = {};
     for (const mt of MASSAGE_TYPES) {
       copy[mt] = [...massagePackagesByType[mt]];
     }
-    return copy as Record<MassageType, MassagePackage[]>;
+    return copy;
   });
   const [customMassagePkgs, setCustomMassagePkgs] = useState<Package[]>([]);
   const [specialPkgs, setSpecialPkgs] = useState<Package[]>([...specialtyPackages]);
   const [editingPkg, setEditingPkg] = useState<{ key: string; name: string; price: string; size: string; duration: string } | null>(null);
-  const [editingMassage, setEditingMassage] = useState<{ type: MassageType; index: number; price: string; size: string; duration: string } | null>(null);
+  const [editingMassage, setEditingMassage] = useState<{ type: string; index: number; price: string; size: string; duration: string } | null>(null);
+  const [addTypeOpen, setAddTypeOpen] = useState(false);
+  const [newType, setNewType] = useState({ name: "", description: "", duration: "30", benefits: "" });
 
   const handleAdd = (pkg: Package, section: string) => {
     if (section === "consultation") setConsulPkgs((p) => [...p, pkg]);
