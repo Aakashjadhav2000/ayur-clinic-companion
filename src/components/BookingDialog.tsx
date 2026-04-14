@@ -7,12 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle } from "lucide-react";
+import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
+import AddClientDialog from "@/components/AddClientDialog";
 
 interface BookingDialogProps {
   defaultDate?: string;
@@ -208,6 +209,14 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
                     )}
                   </div>
                 )}
+                <AddClientDialog
+                  trigger={
+                    <Button variant="outline" size="sm" className="w-full gap-2 mt-1">
+                      <UserPlus className="w-4 h-4" /> New Client
+                    </Button>
+                  }
+                  onClientAdded={(c) => { setClientId(c.id); setClientSearch(""); }}
+                />
               </div>
             )}
           </div>
