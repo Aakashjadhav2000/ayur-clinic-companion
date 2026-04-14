@@ -12,6 +12,9 @@ export interface ClientPackage {
   visitsUsed: number;
   price?: number;
   components?: PackageComponent[]; // For Panchakarma-style multi-component packages
+  complimentaryTotal?: number; // e.g. 1 for Pack of 5
+  complimentaryUsed?: number;
+  ownerClientId?: string; // The client who owns this package (for complimentary tracking)
 }
 
 export interface Client {
