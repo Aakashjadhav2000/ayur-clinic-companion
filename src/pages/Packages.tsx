@@ -21,6 +21,8 @@ const MASSAGE_DETAILS: Record<string, { description: string; duration: string; b
 const DURATION_OPTIONS = [15, 20, 30, 45, 60, 90, 120];
 
 export default function Packages() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [consulPkgs, setConsulPkgs] = useState<Package[]>([...consultationPackages]);
   const [allMassageTypes, setAllMassageTypes] = useState<string[]>([...MASSAGE_TYPES]);
   const [massageDetails, setMassageDetails] = useState<Record<string, { description: string; duration: string; benefits: string }>>({ ...MASSAGE_DETAILS });
