@@ -17,6 +17,9 @@ import AddClientDialog from "@/components/AddClientDialog";
 
 interface BookingDialogProps {
   defaultDate?: string;
+  trigger?: React.ReactNode;
+  preselectedClientId?: string;
+  onBooked?: () => void;
 }
 
 const VISIT_TYPES = [
@@ -27,9 +30,9 @@ const VISIT_TYPES = [
   { colorId: 10, label: "Panchakarma", defaultDuration: 60, section: "specialty" },
 ];
 
-export default function BookingDialog({ defaultDate }: BookingDialogProps) {
+export default function BookingDialog({ defaultDate, trigger, preselectedClientId, onBooked }: BookingDialogProps) {
   const [open, setOpen] = useState(false);
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(preselectedClientId || "");
   const [date, setDate] = useState<Date | undefined>(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
   const [startTime, setStartTime] = useState("09:00");
   const [visitTypeIdx, setVisitTypeIdx] = useState("0");
