@@ -41,6 +41,7 @@ export interface Package {
   price: number;
   perSession: number;
   complimentary: boolean;
+  duration?: number; // session duration in minutes
 }
 
 export const consultationPackages: Package[] = [
