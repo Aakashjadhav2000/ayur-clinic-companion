@@ -699,3 +699,125 @@ function AddPackageDialog({ section, massageTypeName, onAdd }: { section: string
     </Dialog>
   );
 }
+
+/* ── Add/Edit Program Form ── */
+function AddProgramForm({ program, onChange, allMassageTypes, isEdit, onSubmit }: {
+  program: Partial<SpecialtyProgram>;
+  onChange: (p: Partial<SpecialtyProgram>) => void;
+  allMassageTypes: string[];
+  isEdit?: boolean;
+  onSubmit?: () => void;
+}) {
+  const componentTypes = ["Consultation (Pre)", "Consultation (Post)", "Consultation", ...allMassageTypes];
+
+  const addComponent = () => {
+    onChange({ ...program, components: [...(program.components || []), { type: "Consultation", sessions: 1, duration: 30 }] });
+  };
+
+  const updateComponent = (idx: number, field: keyof ProgramComponent, val: string | number) => {
+    const comps = [...(program.components || [])];
+    comps[idx] = { ...comps[idx], [field]: typeof val === "string" && field !== "type" ? Number(val) : val };
+    onChange({ ...program, components: comps });
+  };
+
+  const removeComponent = (idx: number) => {
+    onChange({ ...program, components: (program.components || []).filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <div className="space-y-4 pt-2">
+      {!isEdit && (
+        <>
+          <div>
+            <Label>Program Name *</Label>
+            <Input placeholder="e.g. Panchakarma Plus" value={program.name || ""} onChange={(e) => onChange({ ...program, name: e.target.value })} />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Input placeholder="Brief description" value={program.description || ""} onChange={(e) => onChange({ ...program, description: e.target.value })} />
+          </div>
+        </>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Price ($)</Label>
+          <Input type="number" value={program.price || ""} onChange={(e) => onChange({ ...program, price: Number(e.target.value) })} />
+        </div>
+        <div>
+          <Label>Program Type</Label>
+          <Select value={program.mode || "unlimited"} onValueChange={(v) => onChange({ ...program, mode: v as "unlimited" | "combo" })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unlimited">Unlimited Sessions</SelectItem>
+              <SelectItem value="combo">Combination Program</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {program.mode === "unlimited" && (
+        <div>
+          <Label>Session Duration (min)</Label>
+          <Select value={String(program.duration || 45)} onValueChange={(v) => onChange({ ...program, duration: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {DURATION_OPTIONS.map((d) => (
+                <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">Sessions continue until you manually mark the program as completed</p>
+        </div>
+      )}
+
+      {program.mode === "combo" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Program Components</Label>
+            <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={addComponent}>
+              <PlusCircle className="w-3 h-3" /> Add Component
+            </Button>
+          </div>
+          {(program.components || []).map((comp, idx) => (
+            <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
+              <Select value={comp.type} onValueChange={(v) => updateComponent(idx, "type", v)}>
+                <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {componentTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Input type="number" min={1} value={comp.sessions} onChange={(e) => updateComponent(idx, "sessions", e.target.value)} className="h-8 w-16 text-xs" />
+                <span className="text-xs text-muted-foreground">×</span>
+              </div>
+              <Select value={String(comp.duration)} onValueChange={(v) => updateComponent(idx, "duration", v)}>
+                <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map((d) => (
+                    <SelectItem key={d} value={String(d)}>{d}m</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeComponent(idx)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+          {(program.components || []).length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Total: {program.components!.reduce((s, c) => s + c.sessions, 0)} sessions
+            </p>
+          )}
+        </div>
+      )}
+
+      {onSubmit && (
+        <Button onClick={onSubmit} className="w-full" disabled={!program.name?.trim()}>
+          {isEdit ? "Save Program" : "Add Program"}
+        </Button>
+      )}
+    </div>
+  );
+}
