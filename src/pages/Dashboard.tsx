@@ -4,9 +4,6 @@ import VisitBadge from "@/components/VisitBadge";
 import BookingDialog from "@/components/BookingDialog";
 import AssignPackageDialog from "@/components/AssignPackageDialog";
 import { clients, getActivePackages } from "@/data/mockData";
-import BookingDialog from "@/components/BookingDialog";
-import AssignPackageDialog from "@/components/AssignPackageDialog";
-import { clients } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 
 export default function Dashboard() {
