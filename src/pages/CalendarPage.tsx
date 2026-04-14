@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Ban, X, Clock, Pencil, Trash2, CalendarDays, GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ban, X, Clock, Pencil, Trash2, CalendarDays, GripVertical, CalendarIcon } from "lucide-react";
 import { COLOR_MAP, Visit } from "@/data/mockData";
 import { useVisitsStore, TimeBlock } from "@/stores/visitsStore";
 import VisitBadge from "@/components/VisitBadge";
@@ -9,6 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
