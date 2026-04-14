@@ -61,7 +61,7 @@ export default function Employees() {
 
     // Use edge function to create employee (requires service role)
     const { data, error } = await supabase.functions.invoke("create-employee", {
-      body: { email, password, displayName },
+      body: { email, password, displayName, role: newRole },
     });
 
     if (error || data?.error) {
@@ -72,6 +72,7 @@ export default function Employees() {
       setEmail("");
       setDisplayName("");
       setPassword("");
+      setNewRole("frontdesk");
       await fetchEmployees();
     }
     setCreating(false);
