@@ -455,6 +455,51 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
                   );
                 })}
 
+                {/* Complimentary Visit Option — from any client's Pack of 5 */}
+                {visitCategory === "consultation" && (() => {
+                  // Find all clients with Pack of 5 that have complimentary visits left
+                  const compPkgs = clients.flatMap((c) =>
+                    c.packages
+                      .filter((p) => (p.complimentaryTotal || 0) > 0 && (p.complimentaryUsed || 0) < (p.complimentaryTotal || 0))
+                      .map((p) => ({ pkg: p, owner: c }))
+                  );
+                  if (compPkgs.length === 0) return null;
+
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 pt-2">
+                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">Complimentary Visits</span>
+                        <span className="text-[10px] text-muted-foreground">— from another client's package</span>
+                      </div>
+                      {compPkgs.map(({ pkg, owner }) => {
+                        const compLeft = (pkg.complimentaryTotal || 0) - (pkg.complimentaryUsed || 0);
+                        const pkgKey = `comp_${pkg.id}`;
+                        return (
+                          <button key={pkgKey}
+                            onClick={() => setSelectedPkgId(pkgKey)}
+                            className={cn(
+                              "flex items-center justify-between w-full p-3 rounded-lg border text-left transition-all",
+                              selectedPkgId === pkgKey ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "border-border hover:bg-muted"
+                            )}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-700">
+                                {owner.firstName[0]}{owner.lastName[0]}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Complimentary Visit</p>
+                                <p className="text-xs text-muted-foreground">
+                                  From {owner.firstName} {owner.lastName}'s {pkg.name} · {compLeft} left
+                                </p>
+                              </div>
+                            </div>
+                            {selectedPkgId === pkgKey && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 {/* NTP Option */}
                 <button onClick={() => setSelectedPkgId("ntp")}
                   className={cn(
