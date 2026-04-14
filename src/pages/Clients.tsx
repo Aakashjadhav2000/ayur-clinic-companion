@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import VisitBadge from "@/components/VisitBadge";
 import AddClientDialog from "@/components/AddClientDialog";
+import AssignPackageDialog from "@/components/AssignPackageDialog";
 
 function ClientDetail({ selected, pastVisits, futureVisits, visitsLeft, packageProgress, compact = false }: {
   selected: typeof clients[0];
@@ -82,6 +83,14 @@ function ClientDetail({ selected, pastVisits, futureVisits, visitsLeft, packageP
         ) : (
           <p className="text-xs text-muted-foreground">No active package</p>
         )}
+        <AssignPackageDialog
+          preselectedClientId={selected.id}
+          trigger={
+            <Button variant="outline" size="sm" className="w-full gap-1 mt-2 text-xs">
+              <Package className="w-3 h-3" /> {selected.activePackage ? "Change Package" : "Assign Package"}
+            </Button>
+          }
+        />
       </div>
 
       {/* Visits Tabs */}
