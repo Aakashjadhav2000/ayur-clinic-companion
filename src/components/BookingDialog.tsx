@@ -389,7 +389,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
               <Label>Package</Label>
               <div className="grid gap-2">
               {/* Existing active packages */}
-                {activeClientPkgs.map((pkg) => {
+                {compatiblePkgs.map((pkg) => {
                   const isPancha = !!(pkg.components && pkg.components.length > 0);
                   const left = isPancha
                     ? pkg.components!.reduce((s, c) => s + (c.total - c.used), 0)
