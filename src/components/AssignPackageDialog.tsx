@@ -58,6 +58,15 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
     }
   };
 
+  const visits = useVisitsStore((s) => s.visits);
+  const updateVisit = useVisitsStore((s) => s.updateVisit);
+
+  // Check if client has NTP visits today
+  const today = format(new Date(), "yyyy-MM-dd");
+  const clientNtpVisitsToday = clientId
+    ? visits.filter((v) => v.clientId === clientId && v.date === today && v.packageType === "NTP")
+    : [];
+
   const handleAssign = () => {
     if (!clientId) {
       toast.error("Please select a client");
@@ -89,7 +98,6 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
       }
 
       if (isPanchakarma) {
-        // Build Panchakarma package with component details
         const totalSessions = panchaComps.reduce((s, c) => s + c.sessions, 0);
         const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type}`).join(", ");
         newPkg = {
@@ -113,6 +121,15 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
         };
         toast.success(`"${pkg.name}" added to ${client.firstName}`);
       }
+    }
+
+    // If client had NTP visits today, retroactively deduct 1 visit from the new package
+    if (clientNtpVisitsToday.length > 0) {
+      newPkg.visitsUsed = 1;
+      // Update the first NTP visit to reference the new package
+      const ntpVisit = clientNtpVisitsToday[0];
+      updateVisit(ntpVisit.id, { packageType: newPkg.name });
+      toast.info(`1 visit retroactively deducted for today's NTP visit`);
     }
 
     client.packages.push(newPkg);
