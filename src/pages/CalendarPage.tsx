@@ -193,10 +193,14 @@ export default function CalendarPage() {
 
   // Block dialog
   const [blockOpen, setBlockOpen] = useState(false);
-  const [blockLane, setBlockLane] = useState<"consultation" | "therapy">("consultation");
+  const [blockLane, setBlockLane] = useState<"consultation" | "therapy" | "both">("both");
   const [blockStart, setBlockStart] = useState("09:00");
-  const [blockEnd, setBlockEnd] = useState("10:00");
+  const [blockEnd, setBlockEnd] = useState("17:00");
   const [blockReason, setBlockReason] = useState("");
+  const [blockDateRange, setBlockDateRange] = useState<{ from: Date; to?: Date }>({
+    from: new Date(),
+  });
+  const [blockFullDay, setBlockFullDay] = useState(true);
 
   // Drag state
   const [dragging, setDragging] = useState<{ visitId: number; startY: number; origStartMins: number; origDuration: number } | null>(null);
