@@ -172,7 +172,7 @@ function makePkg(name: string, size: number, used: number, price?: number, owner
 }
 
 export const clients: Client[] = [
-  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", email: "betty@example.com", totalVisits: 24, packages: [makePkg("Pack of 5 Visits", 5, 4, 550), makePkg("Single Session", 1, 0, 175)], lastVisit: "2024-12-15" },
+  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", email: "betty@example.com", totalVisits: 24, packages: [makePkg("Pack of 5 Visits", 5, 4, 550, "betty_simancas"), makePkg("Single Session", 1, 0, 175)], lastVisit: "2024-12-15" },
   { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", email: "", totalVisits: 18, packages: [makePkg("Garbhasanskar", 1, 0, 1400)], lastVisit: "2024-12-20" },
   { id: "harsharan_dogra", firstName: "Harsharan", lastName: "Dogra", phone: "", email: "", totalVisits: 12, packages: [], lastVisit: "2024-11-30" },
   { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", email: "priya.sharma@email.com", totalVisits: 35, packages: [makePkg("Pack of 3 Visits", 3, 3, 350), makePkg("Pack of 4 Sessions", 4, 1, 660)], lastVisit: "2025-01-05" },
