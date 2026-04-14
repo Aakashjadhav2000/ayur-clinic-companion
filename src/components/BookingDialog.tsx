@@ -470,7 +470,7 @@ interface PackageGridProps {
 
 function PackageGrid({
   packages, selectedPackage, onSelect,
-  showCustomPackage, onShowCustom,
+  showCustomPackage, onShowCustom, onHideCustom,
   customName, customPrice, customSessions,
   onCustomName, onCustomPrice, onCustomSessions,
 }: PackageGridProps) {
