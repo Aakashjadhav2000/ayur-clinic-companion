@@ -357,23 +357,52 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
             <div className="space-y-2">
               <Label>Package</Label>
               <div className="grid gap-2">
-                {/* Existing active packages */}
+              {/* Existing active packages */}
                 {activeClientPkgs.map((pkg) => {
-                  const left = Math.max(0, pkg.size - pkg.visitsUsed);
+                  const isPancha = !!(pkg.components && pkg.components.length > 0);
+                  const left = isPancha
+                    ? pkg.components!.reduce((s, c) => s + (c.total - c.used), 0)
+                    : Math.max(0, pkg.size - pkg.visitsUsed);
+                  const canUse = isPancha
+                    ? hasMatchingComponent(pkg, currentType.label, visitCategory)
+                    : left > 0;
+
                   return (
-                    <button key={pkg.id} onClick={() => setSelectedPkgId(pkg.id)}
+                    <button key={pkg.id}
+                      onClick={() => canUse ? setSelectedPkgId(pkg.id) : toast.error(`No matching ${currentType.label} sessions left in this package`)}
                       className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                        "flex flex-col p-3 rounded-lg border text-left transition-all",
+                        !canUse && "opacity-50 cursor-not-allowed",
                         selectedPkgId === pkg.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:bg-muted"
                       )}>
-                      <div>
-                        <p className="text-sm font-medium">{pkg.name}</p>
-                        <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <p className="text-sm font-medium">{pkg.name}</p>
+                          {!isPancha && (
+                            <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!isPancha && <span className="text-xs font-bold text-primary">{left} left</span>}
+                          {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary">{left} left</span>
-                        {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
-                      </div>
+                      {/* Panchakarma component breakdown */}
+                      {isPancha && (
+                        <div className="mt-2 space-y-1 w-full">
+                          {pkg.components!.map((comp, i) => {
+                            const compLeft = comp.total - comp.used;
+                            return (
+                              <div key={i} className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">{comp.type}</span>
+                                <span className={cn("font-medium", compLeft === 0 ? "text-destructive" : "text-primary")}>
+                                  {compLeft}/{comp.total} left
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
