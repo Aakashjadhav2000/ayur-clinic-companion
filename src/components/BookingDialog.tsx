@@ -283,6 +283,8 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setNotes("");
     setClientSearch("");
     setSelectedPkgId("");
+    setCompSearch("");
+    setCompExpanded(false);
   };
 
   const overlapWarning = date && startTime ? checkOverlap() : null;
