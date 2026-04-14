@@ -184,7 +184,7 @@ export default function Employees() {
                   </td>
                   <td className="p-4">
                     <Badge variant={emp.role === "admin" ? "default" : "secondary"}>
-                      {emp.role}
+                      {emp.role === "frontdesk" ? "Front Desk" : emp.role}
                     </Badge>
                   </td>
                   <td className="p-4 text-right">
