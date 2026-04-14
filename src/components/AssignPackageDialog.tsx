@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Package } from "lucide-react";
-import { clients, consultationPackages, massagePackages, specialtyPackages, type ClientPackage } from "@/data/mockData";
+import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type ClientPackage } from "@/data/mockData";
 import { toast } from "sonner";
 
 let pkgIdCounter = 500;
@@ -165,9 +165,13 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
                   {consultationPackages.map((p) => (
                     <SelectItem key={p.name} value={p.name}>{p.name} — ${p.price}</SelectItem>
                   ))}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-1">Massage</div>
-                  {massagePackages.map((p) => (
-                    <SelectItem key={p.name} value={p.name}>{p.name} — ${p.price}</SelectItem>
+                  {MASSAGE_TYPES.map((mt) => (
+                    <div key={mt}>
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-1">{mt}</div>
+                      {massagePackagesByType[mt].map((p) => (
+                        <SelectItem key={p.name} value={p.name}>{p.name} — ${p.price}</SelectItem>
+                      ))}
+                    </div>
                   ))}
                   <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-1">Specialty</div>
                   {specialtyPackages.map((p) => (
