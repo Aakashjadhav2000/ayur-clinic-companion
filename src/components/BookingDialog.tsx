@@ -100,6 +100,37 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   const isPhone = currentType.id === "phone";
   const isNTP = selectedPkgId === "ntp";
 
+  // Filter packages based on visit type compatibility
+  // Consultation → only consultation packs, Panchakarma (with consultation component), Garbhasanskar
+  // Therapy → only therapy/massage packs, Panchakarma (with matching component)
+  const compatiblePkgs = activeClientPkgs.filter((pkg) => {
+    const nameLower = pkg.name.toLowerCase();
+    const isPanchaPkg = nameLower.includes("panchakarma");
+    const isGarbhaPkg = nameLower.includes("garbhasanskar");
+    const isConsultPkg = nameLower.includes("visit") || nameLower.includes("consultation");
+    const isTherapyPkg = nameLower.includes("abhyanga") || nameLower.includes("shirodhara") ||
+      nameLower.includes("nasya") || nameLower.includes("eye treatment") || nameLower.includes("session");
+
+    if (visitCategory === "consultation") {
+      // Consultation can use: consultation packs, Panchakarma (if it has consultation component), Garbhasanskar
+      if (isConsultPkg) return true;
+      if (isGarbhaPkg) return true;
+      if (isPanchaPkg && pkg.components) {
+        return pkg.components.some((c) => c.type.toLowerCase().includes("consultation") && c.used < c.total);
+      }
+      return false;
+    } else {
+      // Therapy can use: therapy/massage packs, Panchakarma (if it has matching therapy component)
+      if (isPanchaPkg && pkg.components) {
+        return hasMatchingComponent(pkg, currentType.label, visitCategory);
+      }
+      if (isGarbhaPkg && (visitSubType === "garbhasanskar")) return true;
+      if (isTherapyPkg) return true;
+      if (isConsultPkg) return false; // Can't use consultation packs for therapy
+      return false;
+    }
+  });
+
   // Check for scheduling conflicts
   const checkOverlap = (): string | null => {
     if (!date || !startTime) return null;
@@ -358,7 +389,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
               <Label>Package</Label>
               <div className="grid gap-2">
               {/* Existing active packages */}
-                {activeClientPkgs.map((pkg) => {
+                {compatiblePkgs.map((pkg) => {
                   const isPancha = !!(pkg.components && pkg.components.length > 0);
                   const left = isPancha
                     ? pkg.components!.reduce((s, c) => s + (c.total - c.used), 0)
