@@ -178,7 +178,7 @@ export const clients: Client[] = [
   { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", email: "priya.sharma@email.com", totalVisits: 35, packages: [makePkg("Pack of 3 Visits", 3, 3, 350), makePkg("Pack of 4 Sessions", 4, 1, 660)], lastVisit: "2025-01-05" },
   { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", email: "anita.p@email.com", totalVisits: 8, packages: [makePkg("Panchakarma", 1, 0, 2500)], lastVisit: "2025-01-10" },
   { id: "maya_krishnan", firstName: "Maya", lastName: "Krishnan", phone: "510-555-0167", email: "", totalVisits: 42, packages: [], lastVisit: "2025-01-08" },
-  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", email: "deepa.nair@email.com", totalVisits: 15, packages: [makePkg("Pack of 5 Visits", 5, 2, 550)], lastVisit: "2025-01-12" },
+  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", email: "deepa.nair@email.com", totalVisits: 15, packages: [makePkg("Pack of 5 Visits", 5, 2, 550, "deepa_nair")], lastVisit: "2025-01-12" },
   { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", email: "", totalVisits: 27, packages: [], lastVisit: "2024-12-28" },
   { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", email: "kavita.r@email.com", totalVisits: 6, packages: [makePkg("Single Visit", 1, 1, 165)], lastVisit: "2025-01-14" },
   { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", email: "sunita.g@email.com", totalVisits: 19, packages: [makePkg("Garbhasanskar", 1, 1, 1400), makePkg("Pack of 6 Sessions", 6, 3, 960)], lastVisit: "2025-01-13" },
