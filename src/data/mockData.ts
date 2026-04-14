@@ -41,12 +41,13 @@ export interface Package {
   price: number;
   perSession: number;
   complimentary: boolean;
+  duration?: number; // session duration in minutes
 }
 
 export const consultationPackages: Package[] = [
-  { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false },
-  { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false },
-  { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true },
+  { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false, duration: 30 },
+  { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false, duration: 30 },
+  { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true, duration: 30 },
 ];
 
 export const MASSAGE_TYPES = ["Abhyanga", "Shirodhara", "Nasya", "Eye Treatment"] as const;
@@ -59,24 +60,24 @@ export interface MassagePackage extends Package {
 // Per-massage-type pricing (edit prices here)
 export const massagePackagesByType: Record<MassageType, MassagePackage[]> = {
   Abhyanga: [
-    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Single", size: 1, price: 175, perSession: 175, complimentary: false },
-    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 4", size: 4, price: 660, perSession: 165, complimentary: false },
-    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 6", size: 6, price: 960, perSession: 160, complimentary: false },
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Single", size: 1, price: 175, perSession: 175, complimentary: false, duration: 60 },
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 4", size: 4, price: 660, perSession: 165, complimentary: false, duration: 60 },
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 6", size: 6, price: 960, perSession: 160, complimentary: false, duration: 60 },
   ],
   Shirodhara: [
-    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Single", size: 1, price: 150, perSession: 150, complimentary: false },
-    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 4", size: 4, price: 560, perSession: 140, complimentary: false },
-    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 6", size: 6, price: 810, perSession: 135, complimentary: false },
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Single", size: 1, price: 150, perSession: 150, complimentary: false, duration: 45 },
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 4", size: 4, price: 560, perSession: 140, complimentary: false, duration: 45 },
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 6", size: 6, price: 810, perSession: 135, complimentary: false, duration: 45 },
   ],
   Nasya: [
-    { category: "Massage", massageType: "Nasya", name: "Nasya - Single", size: 1, price: 120, perSession: 120, complimentary: false },
-    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 4", size: 4, price: 440, perSession: 110, complimentary: false },
-    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 6", size: 6, price: 630, perSession: 105, complimentary: false },
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Single", size: 1, price: 120, perSession: 120, complimentary: false, duration: 20 },
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 4", size: 4, price: 440, perSession: 110, complimentary: false, duration: 20 },
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 6", size: 6, price: 630, perSession: 105, complimentary: false, duration: 20 },
   ],
   "Eye Treatment": [
-    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Single", size: 1, price: 130, perSession: 130, complimentary: false },
-    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 4", size: 4, price: 480, perSession: 120, complimentary: false },
-    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 6", size: 6, price: 690, perSession: 115, complimentary: false },
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Single", size: 1, price: 130, perSession: 130, complimentary: false, duration: 30 },
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 4", size: 4, price: 480, perSession: 120, complimentary: false, duration: 30 },
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 6", size: 6, price: 690, perSession: 115, complimentary: false, duration: 30 },
   ],
 };
 
@@ -89,8 +90,8 @@ export function getMassagePackages(type: MassageType): MassagePackage[] {
 }
 
 export const specialtyPackages: Package[] = [
-  { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false },
-  { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false },
+  { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false, duration: 45 },
+  { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false, duration: 60 },
 ];
 
 export const packages: Package[] = [...consultationPackages, ...massagePackages, ...specialtyPackages];
