@@ -57,7 +57,7 @@ export default function ReachOut() {
       // Check if dismissed
       const entry = dismissed.find((d) => d.clientId === client.id);
       if (entry) {
-        const daysSinceDismiss = Math.floor((today.getTime() - entry.dismissedAt.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceDismiss = Math.floor((today.getTime() - new Date(entry.dismissedAt).getTime()) / (1000 * 60 * 60 * 24));
         const retryIn = RETRY_DAYS - daysSinceDismiss;
         if (retryIn > 0) {
           didntAnswerList.push({ ...client, daysSince, dismissedAt: entry.dismissedAt, retryIn });
