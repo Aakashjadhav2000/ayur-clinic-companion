@@ -177,9 +177,53 @@ export default function Packages() {
             </TabsList>
 
             <TabsContent value="types" className="space-y-6">
-              <div>
-                <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
-                <p className="text-sm text-muted-foreground">Hover to edit, or add new packages per type</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
+                  <p className="text-sm text-muted-foreground">Hover to edit, or add new packages per type</p>
+                </div>
+                <Dialog open={addTypeOpen} onOpenChange={setAddTypeOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <PlusCircle className="w-4 h-4" /> Add Massage Type
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Massage Type</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 pt-2">
+                      <div>
+                        <Label>Name *</Label>
+                        <Input placeholder="e.g. Sinus Treatment" value={newType.name} onChange={(e) => setNewType({ ...newType, name: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Input placeholder="Brief description" value={newType.description} onChange={(e) => setNewType({ ...newType, description: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Default Duration (min)</Label>
+                          <Select value={newType.duration} onValueChange={(v) => setNewType({ ...newType, duration: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {DURATION_OPTIONS.map((d) => (
+                                <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Benefits</Label>
+                          <Input placeholder="Key benefits" value={newType.benefits} onChange={(e) => setNewType({ ...newType, benefits: e.target.value })} />
+                        </div>
+                      </div>
+                      <Button className="w-full" onClick={handleAddMassageType} disabled={!newType.name.trim()}>
+                        <PlusCircle className="w-4 h-4 mr-1" /> Add Massage Type
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               {MASSAGE_TYPES.map((mt) => {
                 const detail = MASSAGE_DETAILS[mt];
