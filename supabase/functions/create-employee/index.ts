@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is authenticated and is admin
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -20,7 +19,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Verify caller is admin
     const callerClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     })
@@ -35,12 +33,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { email, password, displayName } = await req.json()
+    const { email, password, displayName, role } = await req.json()
     if (!email || !password || !displayName) {
       return new Response(JSON.stringify({ error: 'Email, password, and displayName are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Create user with service role
+    const assignRole = role === 'admin' ? 'admin' : role === 'frontdesk' ? 'frontdesk' : 'employee'
+
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -52,8 +51,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Assign employee role
-    await adminClient.from('user_roles').insert({ user_id: newUser.user!.id, role: 'employee' })
+    await adminClient.from('user_roles').insert({ user_id: newUser.user!.id, role: assignRole })
 
     return new Response(JSON.stringify({ success: true, userId: newUser.user!.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
