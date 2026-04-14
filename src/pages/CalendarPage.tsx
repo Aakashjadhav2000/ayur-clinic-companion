@@ -639,44 +639,129 @@ export default function CalendarPage() {
 
       {/* ═══ BLOCK TIME DIALOG ═══ */}
       <Dialog open={blockOpen} onOpenChange={setBlockOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ban className="w-4 h-4" /> Block Time Slot
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Block a time frame on <strong>{new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</strong> to prevent bookings.
-            </p>
+          <div className="space-y-5">
+            {/* Date Range */}
             <div>
-              <Label className="text-xs">Lane</Label>
-              <Select value={blockLane} onValueChange={(v) => setBlockLane(v as "consultation" | "therapy")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="consultation">Consultation</SelectItem>
-                  <SelectItem value="therapy">Therapy</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-medium mb-2 block">Date Range</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {blockDateRange.from ? (
+                      blockDateRange.to ? (
+                        <>
+                          {format(blockDateRange.from, "MMM d, yyyy")} — {format(blockDateRange.to, "MMM d, yyyy")}
+                        </>
+                      ) : (
+                        format(blockDateRange.from, "MMM d, yyyy")
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">Pick dates</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={blockDateRange}
+                    onSelect={(range) => range && setBlockDateRange(range as { from: Date; to?: Date })}
+                    numberOfMonths={2}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Start</Label>
-                <Input type="time" value={blockStart} onChange={(e) => setBlockStart(e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs">End</Label>
-                <Input type="time" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} />
-              </div>
-            </div>
+
+            {/* Lane selection */}
             <div>
-              <Label className="text-xs">Reason</Label>
-              <Input placeholder="e.g. Doctor on leave" value={blockReason} onChange={(e) => setBlockReason(e.target.value)} />
+              <Label className="text-xs font-medium mb-2 block">Block For</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: "both", label: "Both", icon: "🔒" },
+                  { value: "consultation", label: "Consultation", icon: "💬" },
+                  { value: "therapy", label: "Therapy", icon: "💆" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setBlockLane(opt.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all text-sm",
+                      blockLane === opt.value
+                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                        : "border-border bg-card hover:border-primary/40 text-muted-foreground"
+                    )}
+                  >
+                    <span className="text-lg">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Full day toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setBlockFullDay(!blockFullDay)}
+                className={cn(
+                  "relative w-11 h-6 rounded-full transition-colors",
+                  blockFullDay ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform",
+                  blockFullDay ? "translate-x-[22px]" : "translate-x-0.5"
+                )} />
+              </button>
+              <Label className="text-sm cursor-pointer" onClick={() => setBlockFullDay(!blockFullDay)}>
+                Full day block
+              </Label>
+            </div>
+
+            {/* Time selection (only when not full day) */}
+            {!blockFullDay && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Start Time</Label>
+                  <Input type="time" value={blockStart} onChange={(e) => setBlockStart(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">End Time</Label>
+                  <Input type="time" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            {/* Reason */}
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Reason</Label>
+              <Input placeholder="e.g. Doctor on leave, Holiday, Maintenance" value={blockReason} onChange={(e) => setBlockReason(e.target.value)} />
+            </div>
+
+            {/* Summary */}
+            {blockDateRange.from && (
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground text-sm">Summary</p>
+                <p>📅 {blockDateRange.to
+                  ? `${Math.ceil((blockDateRange.to.getTime() - blockDateRange.from.getTime()) / 86400000) + 1} days`
+                  : "1 day"
+                }</p>
+                <p>⏰ {blockFullDay ? "Full day (8 AM – 8 PM)" : `${blockStart} – ${blockEnd}`}</p>
+                <p>🔒 {blockLane === "both" ? "Consultation & Therapy" : blockLane === "consultation" ? "Consultation only" : "Therapy only"}</p>
+                {blockReason && <p>📝 {blockReason}</p>}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBlockOpen(false)}>Cancel</Button>
-            <Button onClick={saveBlock} className="gap-1"><Ban className="w-3 h-3" /> Block</Button>
+            <Button onClick={saveBlock} className="gap-1.5">
+              <Ban className="w-3.5 h-3.5" /> Block Time
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
