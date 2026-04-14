@@ -131,7 +131,9 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     }
   });
 
-  // Check for scheduling conflicts
+  // Check for scheduling conflicts (visits + blocks)
+  const blocks = useVisitsStore((s) => s.blocks);
+
   const checkOverlap = (): string | null => {
     if (!date || !startTime) return null;
     const dateStr = format(date, "yyyy-MM-dd");
@@ -139,6 +141,21 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     const [h, m] = startTime.split(":").map(Number);
     const startMin = h * 60 + m;
     const endMin = startMin + dur;
+
+    // Determine which lane this booking belongs to
+    const lane: "consultation" | "therapy" = visitCategory === "consultation" ? "consultation" : "therapy";
+
+    // Check against blocks
+    const dayBlocks = blocks.filter((b) => b.date === dateStr && b.lane === lane);
+    for (const b of dayBlocks) {
+      const [bh, bm] = b.startTime.split(":").map(Number);
+      const [beh, bem] = b.endTime.split(":").map(Number);
+      const bStart = bh * 60 + bm;
+      const bEnd = beh * 60 + bem;
+      if (startMin < bEnd && endMin > bStart) {
+        return `This time is blocked (${b.reason || "Blocked"}) from ${b.startTime} to ${b.endTime}`;
+      }
+    }
 
     const dayVisits = visits.filter((v) => v.date === dateStr);
 
