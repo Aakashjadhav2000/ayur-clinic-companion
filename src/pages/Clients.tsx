@@ -23,6 +23,41 @@ function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onR
   const pastLimit = compact ? 5 : 20;
   const activePackages = getActivePackages(selected);
   const exhaustedPackages = selected.packages.filter((p) => p.visitsUsed >= p.size);
+  const [editPkgId, setEditPkgId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSize, setEditSize] = useState("");
+  const [editUsed, setEditUsed] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+
+  const startEdit = (pkg: typeof selected.packages[0]) => {
+    setEditPkgId(pkg.id);
+    setEditName(pkg.name);
+    setEditSize(String(pkg.size));
+    setEditUsed(String(pkg.visitsUsed));
+    setEditPrice(String(pkg.price || ""));
+  };
+
+  const saveEdit = () => {
+    const pkg = selected.packages.find((p) => p.id === editPkgId);
+    if (pkg) {
+      pkg.name = editName || pkg.name;
+      pkg.size = Number(editSize) || pkg.size;
+      pkg.visitsUsed = Math.min(Number(editUsed) ?? pkg.visitsUsed, pkg.size);
+      pkg.price = Number(editPrice) || pkg.price;
+      toast.success("Package updated");
+    }
+    setEditPkgId(null);
+    onRefresh?.();
+  };
+
+  const deletePkg = (pkgId: string) => {
+    const idx = selected.packages.findIndex((p) => p.id === pkgId);
+    if (idx !== -1) {
+      selected.packages.splice(idx, 1);
+      toast.success("Package removed");
+      onRefresh?.();
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -73,17 +108,58 @@ function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onR
             {activePackages.map((pkg) => {
               const left = Math.max(0, pkg.size - pkg.visitsUsed);
               const progress = Math.round((pkg.visitsUsed / pkg.size) * 100);
+              const isEditing = editPkgId === pkg.id;
               return (
-                <div key={pkg.id} className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{pkg.name}</span>
-                    <Badge variant="secondary" className="text-xs">{left} left</Badge>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{pkg.visitsUsed} used</span>
-                    <span>{pkg.size} total</span>
-                  </div>
-                  <Progress value={progress} className="h-1.5" />
+                <div key={pkg.id} className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-1 group relative">
+                  {!isEditing && (
+                    <div className="absolute top-2 right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(pkg)}>
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => deletePkg(pkg.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-xs" placeholder="Name" />
+                      <div className="grid grid-cols-3 gap-1">
+                        <div>
+                          <Label className="text-[10px]">Used</Label>
+                          <Input type="number" value={editUsed} onChange={(e) => setEditUsed(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Total</Label>
+                          <Input type="number" value={editSize} onChange={(e) => setEditSize(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Price</Label>
+                          <Input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" className="h-6 text-xs flex-1 gap-1" onClick={saveEdit}>
+                          <Save className="w-3 h-3" /> Save
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditPkgId(null)}>
+                          <XCircle className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between pr-14">
+                        <span className="text-sm font-medium">{pkg.name}</span>
+                        <Badge variant="secondary" className="text-xs">{left} left</Badge>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{pkg.visitsUsed} used</span>
+                        <span>{pkg.size} total</span>
+                      </div>
+                      <Progress value={progress} className="h-1.5" />
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -94,9 +170,14 @@ function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onR
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Completed</p>
             {exhaustedPackages.map((pkg) => (
-              <div key={pkg.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
+              <div key={pkg.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs group">
                 <span className="text-muted-foreground">{pkg.name}</span>
-                <span className="text-destructive">Done</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-destructive">Done</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100" onClick={() => deletePkg(pkg.id)}>
+                    <Trash2 className="w-2.5 h-2.5 text-destructive" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
