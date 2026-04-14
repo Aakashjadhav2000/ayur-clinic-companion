@@ -9,16 +9,31 @@ import BookingDialog from "@/components/BookingDialog";
 
 interface DismissedEntry {
   clientId: string;
-  dismissedAt: Date;
+  dismissedAt: string; // ISO string for JSON serialization
   reason: "no_answer" | "not_interested";
 }
 
 const INACTIVE_DAYS = 45;
 const RETRY_DAYS = 15;
+const STORAGE_KEY = "reachout_dismissed";
+
+function loadDismissed(): DismissedEntry[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function ReachOut() {
-  const [dismissed, setDismissed] = useState<DismissedEntry[]>([]);
+  const [dismissed, setDismissed] = useState<DismissedEntry[]>(loadDismissed);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Persist dismissed list to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
+  }, [dismissed]);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
