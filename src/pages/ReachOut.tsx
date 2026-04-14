@@ -31,6 +31,8 @@ export default function ReachOut() {
   const [dismissed, setDismissed] = useState<DismissedEntry[]>(loadDismissed);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const storeVisits = useVisitsStore((s) => s.visits);
+
   // Persist dismissed list to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
@@ -45,7 +47,7 @@ export default function ReachOut() {
     const didntAnswerList: (Client & { daysSince: number; dismissedAt: string; retryIn: number })[] = [];
 
     clients.forEach((client) => {
-      const allVisits = getClientVisits(client.id);
+      const allVisits = storeVisits.filter((v) => v.clientId === client.id);
       const hasFuture = allVisits.some((v) => v.date > todayStr);
       if (hasFuture) return; // has upcoming appointment — skip
 
