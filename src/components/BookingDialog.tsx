@@ -335,13 +335,53 @@ function PackageStatusBanner({
           </div>
         </div>
 
-        {/* Last visit warning */}
+        {/* Last visit warning + package renewal */}
         {visitsRemaining === 1 && (
-          <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-accent/20 border border-accent/30">
-            <AlertTriangle className="w-4 h-4 text-accent" />
-            <p className="text-xs text-accent-foreground font-medium">
-              This is the last visit in the current package
-            </p>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center gap-2 p-2 rounded-md bg-accent/20 border border-accent/30">
+              <AlertTriangle className="w-4 h-4 text-accent" />
+              <p className="text-xs text-accent-foreground font-medium">
+                This is the last visit — next appointment will need a new package
+              </p>
+            </div>
+            {!showPackageSelect ? (
+              <Button variant="outline" size="sm" onClick={onShowPackageSelect} className="w-full gap-2">
+                <Package className="w-4 h-4" />
+                Buy Next Package Now
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Choose Next Package (optional)</Label>
+                <div className="grid gap-2">
+                  {packagesList.map((pkg) => (
+                    <button
+                      key={pkg.name}
+                      onClick={() => onSelectPackage(pkg.name)}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                        selectedPackage === pkg.name
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "border-border hover:bg-muted"
+                      )}
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{pkg.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pkg.size > 0 ? `${pkg.size} visit${pkg.size !== 1 ? "s" : ""}` : pkg.category}
+                          {pkg.perSession > 0 ? ` · $${pkg.perSession}/session` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-foreground">${pkg.price}</span>
+                        {selectedPackage === pkg.name && (
+                          <CheckCircle className="w-4 h-4 text-primary" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
