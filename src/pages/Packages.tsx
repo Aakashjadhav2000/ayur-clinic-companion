@@ -18,7 +18,7 @@ const MASSAGE_DETAILS: Record<string, { description: string; duration: string; b
 
 export default function Packages() {
   const [consulPkgs, setConsulPkgs] = useState<Package[]>(consultationPackages);
-  const [massagePkgs, setMassagePkgs] = useState<Package[]>(massagePackages);
+  const [massagePkgs, setMassagePkgs] = useState<Package[]>([]);
   const [specialPkgs, setSpecialPkgs] = useState<Package[]>(specialtyPackages);
 
   const handleAdd = (pkg: Package, section: string) => {
