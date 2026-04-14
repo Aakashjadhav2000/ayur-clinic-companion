@@ -166,6 +166,12 @@ export const clients: Client[] = [
   { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", email: "", totalVisits: 27, packages: [], lastVisit: "2024-12-28" },
   { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", email: "kavita.r@email.com", totalVisits: 6, packages: [makePkg("Single Visit", 1, 1, 165)], lastVisit: "2025-01-14" },
   { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", email: "sunita.g@email.com", totalVisits: 19, packages: [makePkg("Garbhasanskar", 1, 1, 1400), makePkg("Pack of 6 Sessions", 6, 3, 960)], lastVisit: "2025-01-13" },
+  // Inactive clients for Reach Out testing (no visits generated for these)
+  { id: "rekha_joshi", firstName: "Rekha", lastName: "Joshi", phone: "908-555-0134", email: "rekha.j@email.com", totalVisits: 10, packages: [], lastVisit: "2025-01-15" },
+  { id: "meena_trivedi", firstName: "Meena", lastName: "Trivedi", phone: "732-555-0178", email: "", totalVisits: 5, packages: [], lastVisit: "2025-02-01" },
+  { id: "pooja_desai", firstName: "Pooja", lastName: "Desai", phone: "646-555-0211", email: "pooja.d@email.com", totalVisits: 14, packages: [makePkg("Pack of 3 Visits", 3, 3, 350)], lastVisit: "2024-12-01" },
+  { id: "nandini_rao", firstName: "Nandini", lastName: "Rao", phone: "", email: "nandini.rao@email.com", totalVisits: 22, packages: [], lastVisit: "2024-11-10" },
+  { id: "shalini_mehta", firstName: "Shalini", lastName: "Mehta", phone: "201-555-0299", email: "shalini.m@email.com", totalVisits: 7, packages: [], lastVisit: "2025-02-15" },
 ];
 
 // Helper: get active (non-exhausted) packages
@@ -176,10 +182,14 @@ export function getActivePackages(client: Client): ClientPackage[] {
 const visitTypes = ["Consultation", "Phone Consultation", "Therapy", "Garbhasanskar", "Panchakarma"];
 const colorIds = [0, 0, 0, 1, 2, 3, 9, 10, 0, 0];
 
+// IDs of clients to exclude from random visit generation (for Reach Out testing)
+const inactiveClientIds = new Set(["rekha_joshi", "meena_trivedi", "pooja_desai", "nandini_rao", "shalini_mehta"]);
+
 function generateVisits(): Visit[] {
   const visits: Visit[] = [];
   let id = 0;
   const now = new Date();
+  const activeClients = clients.filter((c) => !inactiveClientIds.has(c.id));
 
   for (let dayOffset = -60; dayOffset <= 14; dayOffset++) {
     const date = new Date(now);
@@ -188,7 +198,7 @@ function generateVisits(): Visit[] {
 
     const numVisits = Math.floor(Math.random() * 5) + 2;
     for (let v = 0; v < numVisits; v++) {
-      const client = clients[Math.floor(Math.random() * clients.length)];
+      const client = activeClients[Math.floor(Math.random() * activeClients.length)];
       const hour = 9 + Math.floor(Math.random() * 9);
       const colorId = colorIds[Math.floor(Math.random() * colorIds.length)];
       const duration = colorId === 1 || colorId === 3 ? 15 : colorId === 2 ? 60 : 30;
