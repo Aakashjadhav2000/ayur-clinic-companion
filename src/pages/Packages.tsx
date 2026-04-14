@@ -32,6 +32,11 @@ export default function Packages() {
   });
   const [customMassagePkgs, setCustomMassagePkgs] = useState<Package[]>([]);
   const [specialPkgs, setSpecialPkgs] = useState<Package[]>([...specialtyPackages]);
+  const [programs, setPrograms] = useState<SpecialtyProgram[]>([...specialtyPrograms]);
+  const [editingProgram, setEditingProgram] = useState<string | null>(null);
+  const [editProgramData, setEditProgramData] = useState<Partial<SpecialtyProgram>>({});
+  const [addProgramOpen, setAddProgramOpen] = useState(false);
+  const [newProgram, setNewProgram] = useState<Partial<SpecialtyProgram>>({ name: "", description: "", price: 0, mode: "unlimited", duration: 45, components: [] });
   const [editingPkg, setEditingPkg] = useState<{ key: string; name: string; price: string; size: string; duration: string } | null>(null);
   const [editingMassage, setEditingMassage] = useState<{ type: string; index: number; price: string; size: string; duration: string } | null>(null);
   const [addTypeOpen, setAddTypeOpen] = useState(false);
