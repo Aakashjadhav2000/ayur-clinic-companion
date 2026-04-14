@@ -459,6 +459,7 @@ interface PackageGridProps {
   onSelect: (name: string) => void;
   showCustomPackage: boolean;
   onShowCustom: () => void;
+  onHideCustom: () => void;
   customName: string;
   customPrice: string;
   customSessions: string;
