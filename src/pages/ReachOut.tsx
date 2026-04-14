@@ -78,7 +78,7 @@ export default function ReachOut() {
 
     return { toCall: toCallList, didntAnswer: didntAnswerList };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todayStr, dismissed, refreshKey]);
+  }, [todayStr, dismissed, refreshKey, storeVisits]);
 
   const markDidntAnswer = (clientId: string) => {
     setDismissed((prev) => [
