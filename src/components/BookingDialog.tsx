@@ -108,11 +108,8 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     const isPanchaPkg = nameLower.includes("panchakarma");
     const isGarbhaPkg = nameLower.includes("garbhasanskar");
     const isConsultPkg = nameLower.includes("visit") || nameLower.includes("consultation");
-    const isTherapyPkg = nameLower.includes("abhyanga") || nameLower.includes("shirodhara") ||
-      nameLower.includes("nasya") || nameLower.includes("eye treatment") || nameLower.includes("session");
 
     if (visitCategory === "consultation") {
-      // Consultation can use: consultation packs, Panchakarma (if it has consultation component), Garbhasanskar
       if (isConsultPkg) return true;
       if (isGarbhaPkg) return true;
       if (isPanchaPkg && pkg.components) {
@@ -120,13 +117,16 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
       }
       return false;
     } else {
-      // Therapy can use: therapy/massage packs, Panchakarma (if it has matching therapy component)
+      // Therapy: only allow packs that match the EXACT therapy type being booked
       if (isPanchaPkg && pkg.components) {
         return hasMatchingComponent(pkg, currentType.label, visitCategory);
       }
-      if (isGarbhaPkg && (visitSubType === "garbhasanskar")) return true;
-      if (isTherapyPkg) return true;
-      if (isConsultPkg) return false; // Can't use consultation packs for therapy
+      if (isGarbhaPkg && visitSubType === "garbhasanskar") return true;
+
+      // For therapy packs, the pack name must match the selected therapy type
+      const therapyLabel = currentType.label.toLowerCase();
+      if (nameLower.includes(therapyLabel)) return true;
+
       return false;
     }
   });
