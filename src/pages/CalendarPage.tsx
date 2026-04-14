@@ -299,11 +299,31 @@ export default function CalendarPage() {
     const snapped = snapMinutes(newStartMins);
     const newStart = minutesToTime(snapped);
     const newEnd = minutesToTime(snapped + dragging.origDuration);
+
+    // Check if dropping into a blocked slot
+    const draggedVisit = visits.find((v) => v.id === dragging.visitId);
+    if (draggedVisit) {
+      const lane = getVisitLane(draggedVisit);
+      const dayBlks = blocks.filter((b) => b.date === selectedDate && b.lane === lane);
+      for (const b of dayBlks) {
+        const [bh, bm] = b.startTime.split(":").map(Number);
+        const [beh, bem] = b.endTime.split(":").map(Number);
+        const bStart = bh * 60 + bm;
+        const bEnd = beh * 60 + bem;
+        if (snapped < bEnd && (snapped + dragging.origDuration) > bStart) {
+          toast.error(`Can't move here — blocked (${b.reason}) from ${b.startTime} to ${b.endTime}`);
+          setDragging(null);
+          setDragPreview(null);
+          return;
+        }
+      }
+    }
+
     updateVisit(dragging.visitId, { startTime: newStart, endTime: newEnd });
     toast.success(`Moved to ${formatTime12(newStart)}`);
     setDragging(null);
     setDragPreview(null);
-  }, [dragging, dragPreview, updateVisit]);
+  }, [dragging, dragPreview, updateVisit, visits, blocks, selectedDate]);
 
   useEffect(() => {
     if (!dragging) return;
