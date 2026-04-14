@@ -184,7 +184,13 @@ export const clients: Client[] = [
 
 // Helper: get active (non-exhausted) packages
 export function getActivePackages(client: Client): ClientPackage[] {
-  return client.packages.filter((p) => p.visitsUsed < p.size);
+  return client.packages.filter((p) => {
+    // For component-based packages (Panchakarma), check if any component has remaining sessions
+    if (p.components && p.components.length > 0) {
+      return p.components.some((c) => c.used < c.total);
+    }
+    return p.visitsUsed < p.size;
+  });
 }
 
 const visitTypes = ["Consultation", "Phone Consultation", "Therapy", "Garbhasanskar", "Panchakarma"];
