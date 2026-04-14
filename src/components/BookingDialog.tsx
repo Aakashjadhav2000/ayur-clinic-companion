@@ -219,7 +219,18 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
 
     // Deduct from package if using existing package
     let pkgName = "";
-    if (selectedPkgId && selectedPkgId !== "ntp") {
+    if (selectedPkgId && selectedPkgId.startsWith("comp_")) {
+      // Complimentary visit — deduct from owner's package
+      const realPkgId = selectedPkgId.replace("comp_", "");
+      for (const c of clients) {
+        const pkg = c.packages.find((p) => p.id === realPkgId);
+        if (pkg) {
+          pkg.complimentaryUsed = (pkg.complimentaryUsed || 0) + 1;
+          pkgName = `Complimentary (from ${c.firstName} ${c.lastName}'s ${pkg.name})`;
+          break;
+        }
+      }
+    } else if (selectedPkgId && selectedPkgId !== "ntp") {
       const pkg = client.packages.find((p) => p.id === selectedPkgId);
       if (pkg) {
         // If Panchakarma with components, deduct from the matching component
