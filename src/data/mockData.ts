@@ -55,6 +55,16 @@ export const specialtyPackages: Package[] = [
 
 export const packages: Package[] = [...consultationPackages, ...massagePackages, ...specialtyPackages];
 
+export const COLOR_MAP: Record<number, { label: string; color: string; bg: string }> = {
+  0: { label: "Consultation", color: "text-blue-700", bg: "bg-blue-100" },
+  1: { label: "Phone/Panchakarma", color: "text-lavender-foreground", bg: "bg-lavender" },
+  2: { label: "Therapy", color: "text-sage-foreground", bg: "bg-sage" },
+  3: { label: "Phone/Panchakarma", color: "text-grape-foreground", bg: "bg-grape" },
+  9: { label: "Garbhasanskar", color: "text-amber-800", bg: "bg-amber-100" },
+  10: { label: "Panchakarma", color: "text-orange-800", bg: "bg-orange-100" },
+  11: { label: "Cancelled", color: "text-destructive", bg: "bg-red-50" },
+};
+
 export const clients: Client[] = [
   { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 4, lastVisit: "2024-12-15" },
   { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", totalVisits: 18, activePackage: "Garbhasanskar", packageSize: 1, visitsUsed: 0, lastVisit: "2024-12-20" },
