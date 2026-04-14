@@ -225,9 +225,9 @@ export default function Packages() {
                   </DialogContent>
                 </Dialog>
               </div>
-              {MASSAGE_TYPES.map((mt) => {
-                const detail = MASSAGE_DETAILS[mt];
-                const pkgs = massagePkgsByType[mt];
+              {allMassageTypes.map((mt) => {
+                const detail = massageDetails[mt];
+                const pkgs = massagePkgsByType[mt] || [];
                 return (
                   <div key={mt} className="bg-card rounded-lg border border-border p-5 space-y-4">
                     <div className="flex items-center justify-between">
@@ -240,7 +240,17 @@ export default function Packages() {
                           <p className="text-xs text-muted-foreground">{detail?.duration} · {detail?.description}</p>
                         </div>
                       </div>
-                      <AddPackageDialog
+                      <div className="flex items-center gap-1">
+                        <AddPackageDialog
+                          section="massage-type"
+                          massageTypeName={mt}
+                          onAdd={(pkg) => handleAddMassageTypePkg(mt, pkg)}
+                        />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteMassageType(mt)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                         section="massage-type"
                         massageTypeName={mt}
                         onAdd={(pkg) => handleAddMassageTypePkg(mt, pkg)}
