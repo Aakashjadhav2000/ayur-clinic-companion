@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarDays, ClipboardList, Package } from "lucide-react";
+import { LayoutDashboard, Users, CalendarDays, ClipboardList, Package, PhoneOutgoing } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/visits", icon: ClipboardList, label: "Visits" },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
   { to: "/packages", icon: Package, label: "Packages" },
+  { to: "/reach-out", icon: PhoneOutgoing, label: "Reach Out" },
 ];
 
 export default function AppSidebar() {

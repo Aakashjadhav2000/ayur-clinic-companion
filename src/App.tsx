@@ -9,6 +9,7 @@ import Clients from "@/pages/Clients";
 import Visits from "@/pages/Visits";
 import CalendarPage from "@/pages/CalendarPage";
 import Packages from "@/pages/Packages";
+import ReachOut from "@/pages/ReachOut";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/visits" element={<Visits />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/packages" element={<Packages />} />
+              <Route path="/reach-out" element={<ReachOut />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
