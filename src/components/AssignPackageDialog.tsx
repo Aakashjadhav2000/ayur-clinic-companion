@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package } from "lucide-react";
-import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type ClientPackage } from "@/data/mockData";
+import { Package, Layers, PlusCircle } from "lucide-react";
+import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, specialtyPrograms, type ClientPackage, type ProgramComponent } from "@/data/mockData";
 import { toast } from "sonner";
 
 let pkgIdCounter = 500;
@@ -26,6 +26,13 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
   const [customSize, setCustomSize] = useState("");
   const [customPrice, setCustomPrice] = useState("");
 
+  // Panchakarma component customizer
+  const panchakarmaProgram = specialtyPrograms.find((p) => p.id === "panchakarma");
+  const [panchaComps, setPanchaComps] = useState<ProgramComponent[]>(
+    () => panchakarmaProgram?.components?.map((c) => ({ ...c })) || []
+  );
+  const [showPanchaBuilder, setShowPanchaBuilder] = useState(false);
+
   const filteredClients = clientSearch.trim()
     ? clients.filter(
         (c) =>
@@ -35,6 +42,19 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
     : clients;
 
   const selectedClient = clients.find((c) => c.id === clientId);
+  const isPanchakarma = selectedPkg === "Panchakarma";
+
+  const handlePkgChange = (val: string) => {
+    setSelectedPkg(val);
+    if (val === "Panchakarma") {
+      setShowPanchaBuilder(true);
+      if (panchakarmaProgram?.components) {
+        setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
+      }
+    } else {
+      setShowPanchaBuilder(false);
+    }
+  };
 
   const handleAssign = () => {
     if (!clientId) {
@@ -65,17 +85,32 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
         toast.error("Please select a package");
         return;
       }
-      const allPkgs = [...consultationPackages, ...massagePackages, ...specialtyPackages];
-      const pkg = allPkgs.find((p) => p.name === selectedPkg);
-      if (!pkg) return;
-      newPkg = {
-        id: `pkg_${pkgIdCounter++}`,
-        name: pkg.name,
-        size: pkg.size || 1,
-        visitsUsed: 0,
-        price: pkg.price,
-      };
-      toast.success(`"${pkg.name}" added to ${client.firstName}`);
+
+      if (isPanchakarma) {
+        // Build Panchakarma package with component details
+        const totalSessions = panchaComps.reduce((s, c) => s + c.sessions, 0);
+        const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type}`).join(", ");
+        newPkg = {
+          id: `pkg_${pkgIdCounter++}`,
+          name: `Panchakarma (${compSummary})`,
+          size: totalSessions,
+          visitsUsed: 0,
+          price: panchakarmaProgram?.price || 2500,
+        };
+        toast.success(`Panchakarma program (${totalSessions} sessions) added to ${client.firstName}`);
+      } else {
+        const allPkgs = [...consultationPackages, ...massagePackages, ...specialtyPackages];
+        const pkg = allPkgs.find((p) => p.name === selectedPkg);
+        if (!pkg) return;
+        newPkg = {
+          id: `pkg_${pkgIdCounter++}`,
+          name: pkg.name,
+          size: pkg.size || 1,
+          visitsUsed: 0,
+          price: pkg.price,
+        };
+        toast.success(`"${pkg.name}" added to ${client.firstName}`);
+      }
     }
 
     client.packages.push(newPkg);
@@ -92,6 +127,8 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
     setCustomName("");
     setCustomSize("");
     setCustomPrice("");
+    setShowPanchaBuilder(false);
+    if (panchakarmaProgram?.components) setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
   };
 
   return (
@@ -103,7 +140,7 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Add Package to Client</DialogTitle>
         </DialogHeader>
@@ -156,7 +193,7 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
           {!customMode ? (
             <div className="space-y-2">
               <Label>Add Package</Label>
-              <Select value={selectedPkg} onValueChange={setSelectedPkg}>
+              <Select value={selectedPkg} onValueChange={handlePkgChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a package" />
                 </SelectTrigger>
@@ -179,6 +216,56 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Panchakarma Component Builder */}
+              {showPanchaBuilder && (
+                <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-4 space-y-3">
+                  <p className="text-sm font-semibold flex items-center gap-2 text-orange-800">
+                    <Layers className="w-4 h-4" /> Panchakarma — Customize Sessions
+                  </p>
+                  <p className="text-xs text-muted-foreground">Choose how many of each therapy type</p>
+                  <div className="space-y-2">
+                    {panchaComps.map((comp, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 rounded bg-background border border-border">
+                        <span className="text-sm font-medium flex-1">{comp.type}</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline" size="icon" className="h-7 w-7"
+                            onClick={() => {
+                              if (comp.sessions > 0) {
+                                const updated = [...panchaComps];
+                                updated[idx] = { ...comp, sessions: comp.sessions - 1 };
+                                setPanchaComps(updated);
+                              }
+                            }}
+                          >−</Button>
+                          <span className="text-sm font-bold w-6 text-center">{comp.sessions}</span>
+                          <Button
+                            variant="outline" size="icon" className="h-7 w-7"
+                            onClick={() => {
+                              const updated = [...panchaComps];
+                              updated[idx] = { ...comp, sessions: comp.sessions + 1 };
+                              setPanchaComps(updated);
+                            }}
+                          >+</Button>
+                        </div>
+                        <span className="text-xs text-muted-foreground w-12 text-right">{comp.duration}min</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <Button variant="ghost" size="sm" className="text-xs gap-1 h-7" onClick={() => {
+                      setPanchaComps((prev) => [...prev, { type: "Consultation", sessions: 1, duration: 30 }]);
+                    }}>
+                      <PlusCircle className="w-3 h-3" /> Add Component
+                    </Button>
+                    <p className="text-xs font-medium text-orange-700">
+                      Total: {panchaComps.reduce((s, c) => s + c.sessions, 0)} sessions
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <Button variant="ghost" size="sm" className="text-xs" onClick={() => setCustomMode(true)}>
                 + Custom Package
               </Button>
