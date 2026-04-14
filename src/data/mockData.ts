@@ -43,20 +43,50 @@ export interface Package {
   complimentary: boolean;
 }
 
-export const MASSAGE_TYPES = ["Abhyanga", "Shirodhara", "Nasya", "Eye Treatment"] as const;
-export type MassageType = typeof MASSAGE_TYPES[number];
-
 export const consultationPackages: Package[] = [
   { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false },
   { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false },
   { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true },
 ];
 
-export const massagePackages: Package[] = [
-  { category: "Massage", name: "Single Session", size: 1, price: 175, perSession: 175, complimentary: false },
-  { category: "Massage", name: "Pack of 4 Sessions", size: 4, price: 660, perSession: 165, complimentary: false },
-  { category: "Massage", name: "Pack of 6 Sessions", size: 6, price: 960, perSession: 160, complimentary: false },
-];
+export const MASSAGE_TYPES = ["Abhyanga", "Shirodhara", "Nasya", "Eye Treatment"] as const;
+export type MassageType = typeof MASSAGE_TYPES[number];
+
+export interface MassagePackage extends Package {
+  massageType: MassageType;
+}
+
+// Per-massage-type pricing (edit prices here)
+export const massagePackagesByType: Record<MassageType, MassagePackage[]> = {
+  Abhyanga: [
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Single", size: 1, price: 175, perSession: 175, complimentary: false },
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 4", size: 4, price: 660, perSession: 165, complimentary: false },
+    { category: "Massage", massageType: "Abhyanga", name: "Abhyanga - Pack of 6", size: 6, price: 960, perSession: 160, complimentary: false },
+  ],
+  Shirodhara: [
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Single", size: 1, price: 150, perSession: 150, complimentary: false },
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 4", size: 4, price: 560, perSession: 140, complimentary: false },
+    { category: "Massage", massageType: "Shirodhara", name: "Shirodhara - Pack of 6", size: 6, price: 810, perSession: 135, complimentary: false },
+  ],
+  Nasya: [
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Single", size: 1, price: 120, perSession: 120, complimentary: false },
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 4", size: 4, price: 440, perSession: 110, complimentary: false },
+    { category: "Massage", massageType: "Nasya", name: "Nasya - Pack of 6", size: 6, price: 630, perSession: 105, complimentary: false },
+  ],
+  "Eye Treatment": [
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Single", size: 1, price: 130, perSession: 130, complimentary: false },
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 4", size: 4, price: 480, perSession: 120, complimentary: false },
+    { category: "Massage", massageType: "Eye Treatment", name: "Eye Treatment - Pack of 6", size: 6, price: 690, perSession: 115, complimentary: false },
+  ],
+};
+
+// Flat list of all massage packages (for backward compat)
+export const massagePackages: MassagePackage[] = Object.values(massagePackagesByType).flat();
+
+// Helper to get packages for a specific massage type
+export function getMassagePackages(type: MassageType): MassagePackage[] {
+  return massagePackagesByType[type] || [];
+}
 
 export const specialtyPackages: Package[] = [
   { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false },
