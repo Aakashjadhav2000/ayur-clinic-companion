@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { consultationPackages, specialtyPackages, specialtyPrograms, MASSAGE_TYPES, massagePackagesByType, type Package, type MassagePackage, type MassageType, type SpecialtyProgram, type ProgramComponent } from "@/data/mockData";
 import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle, Trash2, Clock, Infinity, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
