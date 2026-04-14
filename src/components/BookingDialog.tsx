@@ -7,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus, Layers } from "lucide-react";
+import { CalendarIcon, Plus, AlertTriangle, CheckCircle, UserPlus, Layers, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType } from "@/data/mockData";
+import { clients, MASSAGE_TYPES, getActivePackages, type ClientPackage, type MassageType } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
@@ -22,33 +22,36 @@ interface BookingDialogProps {
   onBooked?: () => void;
 }
 
-const VISIT_TYPES = [
-  { colorId: 0, label: "Consultation", defaultDuration: 30, section: "consultation" },
-  { colorId: 1, label: "Phone Consultation", defaultDuration: 15, section: "consultation" },
-  { colorId: 2, label: "Massage / Therapy", defaultDuration: 60, section: "massage" },
-  { colorId: 9, label: "Garbhasanskar", defaultDuration: 45, section: "specialty" },
-  { colorId: 10, label: "Panchakarma", defaultDuration: 60, section: "specialty" },
+// Visit categories with durations
+const CONSULTATION_TYPES = [
+  { id: "consultation", label: "Consultation", colorId: 0, duration: 30 },
+  { id: "phone", label: "Phone Consultation (Free)", colorId: 1, duration: 15 },
 ];
+
+const THERAPY_TYPES = [
+  { id: "abhyanga", label: "Abhyanga", colorId: 2, duration: 60 },
+  { id: "shirodhara", label: "Shirodhara", colorId: 2, duration: 45 },
+  { id: "nasya", label: "Nasya", colorId: 2, duration: 20 },
+  { id: "eye_treatment", label: "Eye Treatment", colorId: 2, duration: 30 },
+  { id: "garbhasanskar", label: "Garbhasanskar", colorId: 9, duration: 45 },
+  { id: "panchakarma", label: "Panchakarma", colorId: 10, duration: 60 },
+];
+
+type VisitCategory = "consultation" | "therapy";
 
 export default function BookingDialog({ defaultDate, trigger, preselectedClientId, onBooked }: BookingDialogProps) {
   const [open, setOpen] = useState(false);
   const [clientId, setClientId] = useState(preselectedClientId || "");
   const [date, setDate] = useState<Date | undefined>(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
   const [startTime, setStartTime] = useState("09:00");
-  const [visitTypeIdx, setVisitTypeIdx] = useState("0");
-  const [duration, setDuration] = useState("30");
+  const [visitCategory, setVisitCategory] = useState<VisitCategory>("consultation");
+  const [visitSubType, setVisitSubType] = useState("consultation"); // id from the type arrays
   const [notes, setNotes] = useState("");
   const [clientSearch, setClientSearch] = useState("");
-  const [selectedPkgId, setSelectedPkgId] = useState(""); // client package id to use
-  const [selectedNewPkg, setSelectedNewPkg] = useState(""); // new package from catalog
-  const [massageType, setMassageType] = useState("");
-  const [massageSessions, setMassageSessions] = useState("1");
-  const [showCustomPackage, setShowCustomPackage] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customPrice, setCustomPrice] = useState("");
-  const [customSessions, setCustomSessions] = useState("");
-  // Panchakarma reference only (builder moved to AssignPackageDialog)
+  const [selectedPkgId, setSelectedPkgId] = useState(""); // existing package or "ntp"
+
   const addVisit = useVisitsStore((s) => s.addVisit);
+  const visits = useVisitsStore((s) => s.visits);
 
   const filteredClients = clients.filter(
     (c) =>
@@ -58,26 +61,58 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   );
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const selectedType = VISIT_TYPES[Number(visitTypeIdx)];
-  const isPhoneVisit = selectedType.colorId === 1 || selectedType.colorId === 3;
-  const isMassage = selectedType.section === "massage";
-  const isSpecialty = selectedType.section === "specialty";
-  const isPanchakarma = selectedType.colorId === 10;
-
   const activeClientPkgs = selectedClient ? getActivePackages(selectedClient) : [];
 
-  const relevantPackages = isMassage
-    ? (massageType ? getMassagePackages(massageType as MassageType) : [])
-    : isSpecialty
-    ? specialtyPackages
-    : consultationPackages;
+  // Get current visit type info
+  const allTypes = [...CONSULTATION_TYPES, ...THERAPY_TYPES];
+  const currentType = allTypes.find((t) => t.id === visitSubType) || CONSULTATION_TYPES[0];
+  const isPhone = currentType.id === "phone";
+  const isNTP = selectedPkgId === "ntp";
 
-  const handleTypeChange = (idx: string) => {
-    setVisitTypeIdx(idx);
-    setDuration(String(VISIT_TYPES[Number(idx)].defaultDuration));
+  // Check for scheduling conflicts
+  const checkOverlap = (): string | null => {
+    if (!date || !startTime) return null;
+    const dateStr = format(date, "yyyy-MM-dd");
+    const dur = currentType.duration;
+    const [h, m] = startTime.split(":").map(Number);
+    const startMin = h * 60 + m;
+    const endMin = startMin + dur;
+
+    const dayVisits = visits.filter((v) => v.date === dateStr);
+
+    for (const v of dayVisits) {
+      const [vh, vm] = v.startTime.split(":").map(Number);
+      const vStart = vh * 60 + vm;
+      const vEnd = vStart + v.duration;
+
+      // Check if times overlap
+      if (startMin < vEnd && endMin > vStart) {
+        const isNewConsultation = visitCategory === "consultation";
+        const isExistingConsultation = v.colorId === 0 || v.colorId === 1;
+        const isNewTherapy = visitCategory === "therapy";
+        const isExistingTherapy = v.colorId === 2 || v.colorId === 9 || v.colorId === 10;
+
+        // Consultations can't overlap with other consultations
+        if (isNewConsultation && isExistingConsultation) {
+          return `Consultation overlaps with ${v.clientName}'s ${v.visitType} at ${v.startTime}`;
+        }
+
+        // Same therapy types can't overlap
+        if (isNewTherapy && isExistingTherapy) {
+          const newLabel = currentType.label;
+          if (v.visitType === newLabel || v.visitType === `Massage - ${newLabel}`) {
+            return `${newLabel} overlaps with ${v.clientName}'s slot at ${v.startTime}`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleCategoryChange = (cat: VisitCategory) => {
+    setVisitCategory(cat);
+    setVisitSubType(cat === "consultation" ? "consultation" : "abhyanga");
     setSelectedPkgId("");
-    setSelectedNewPkg("");
-    setShowCustomPackage(false);
   };
 
   const handleSubmit = () => {
@@ -85,52 +120,35 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
       toast.error("Please fill in all required fields");
       return;
     }
-    if (isMassage && !massageType) {
-      toast.error("Please select a massage type");
+    if (!isPhone && !selectedPkgId) {
+      toast.error("Please select a package or NTP");
+      return;
+    }
+
+    // Check overlap
+    const overlap = checkOverlap();
+    if (overlap) {
+      toast.error(overlap);
       return;
     }
 
     const client = clients.find((c) => c.id === clientId)!;
-    const dur = Number(duration);
+    const dur = currentType.duration;
     const [h, m] = startTime.split(":").map(Number);
     const endMinutes = h * 60 + m + dur;
     const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
 
-    // Determine package name for the visit
+    // Deduct from package if using existing package
     let pkgName = "";
-    if (selectedPkgId) {
+    if (selectedPkgId && selectedPkgId !== "ntp") {
       const pkg = client.packages.find((p) => p.id === selectedPkgId);
       if (pkg) {
         pkg.visitsUsed += 1;
         pkgName = pkg.name;
       }
-    } else if (selectedNewPkg) {
-      pkgName = selectedNewPkg;
-      // Add new package to client
-      const catalogPkg = allPackages.find((p) => p.name === selectedNewPkg);
-      if (catalogPkg) {
-        const newPkg: ClientPackage = {
-          id: `pkg_${Date.now()}`,
-          name: catalogPkg.name,
-          size: catalogPkg.size || 1,
-          visitsUsed: 1,
-          price: catalogPkg.price,
-        };
-        client.packages.push(newPkg);
-      }
-    } else if (showCustomPackage && customName) {
-      pkgName = `Custom: ${customName}`;
-      const newPkg: ClientPackage = {
-        id: `pkg_${Date.now()}`,
-        name: customName,
-        size: parseInt(customSessions) || 1,
-        visitsUsed: 1,
-        price: parseInt(customPrice) || undefined,
-      };
-      client.packages.push(newPkg);
+    } else if (isNTP) {
+      pkgName = "NTP";
     }
-
-    let finalNotes = notes;
 
     addVisit({
       clientId: client.id,
@@ -139,9 +157,9 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
       startTime,
       endTime,
       duration: dur,
-      colorId: selectedType.colorId,
-      visitType: isMassage ? `Massage - ${massageType}` : selectedType.label,
-      notes: isMassage ? `${massageType} | ${massageSessions} session(s) | ${notes}` : finalNotes,
+      colorId: currentType.colorId,
+      visitType: currentType.label,
+      notes,
       packageType: pkgName || undefined,
     });
 
@@ -155,20 +173,14 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setClientId("");
     setDate(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
     setStartTime("09:00");
-    setVisitTypeIdx("0");
-    setDuration("30");
+    setVisitCategory("consultation");
+    setVisitSubType("consultation");
     setNotes("");
     setClientSearch("");
     setSelectedPkgId("");
-    setSelectedNewPkg("");
-    setMassageType("");
-    setMassageSessions("1");
-    setShowCustomPackage(false);
-    setCustomName("");
-    setCustomPrice("");
-    setCustomSessions("");
-    
   };
+
+  const overlapWarning = date && startTime ? checkOverlap() : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
@@ -200,7 +212,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
                     <p className="text-xs text-muted-foreground">{selectedClient.phone || "No phone"}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => { setClientId(""); setSelectedPkgId(""); setSelectedNewPkg(""); }}>Change</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setClientId(""); setSelectedPkgId(""); }}>Change</Button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -211,7 +223,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
                       <p className="p-3 text-sm text-muted-foreground">No clients found</p>
                     ) : (
                       filteredClients.slice(0, 8).map((c) => (
-                        <button key={c.id} onClick={() => { setClientId(c.id); setClientSearch(""); setSelectedPkgId(""); setSelectedNewPkg(""); }}
+                        <button key={c.id} onClick={() => { setClientId(c.id); setClientSearch(""); setSelectedPkgId(""); }}
                           className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left">
                           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                             {c.firstName[0]}{c.lastName[0]}
@@ -237,122 +249,106 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
             )}
           </div>
 
-          {/* Visit Type */}
+          {/* Visit Category: Consultation or Therapy */}
           <div className="space-y-2">
-            <Label>Visit Type</Label>
-            <Select value={visitTypeIdx} onValueChange={handleTypeChange}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0" className="font-medium text-blue-700">Consultation</SelectItem>
-                <SelectItem value="1" className="text-muted-foreground">Phone Consultation (Free)</SelectItem>
-                <SelectItem value="2" className="font-medium text-sage-foreground">Massage / Therapy</SelectItem>
-                <SelectItem value="3" className="font-medium text-amber-700">Garbhasanskar</SelectItem>
-                <SelectItem value="4" className="font-medium text-orange-700">Panchakarma</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Appointment Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleCategoryChange("consultation")}
+                className={cn(
+                  "p-3 rounded-lg border text-center text-sm font-medium transition-all",
+                  visitCategory === "consultation"
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                    : "border-border hover:bg-muted"
+                )}
+              >
+                Consultation
+              </button>
+              <button
+                onClick={() => handleCategoryChange("therapy")}
+                className={cn(
+                  "p-3 rounded-lg border text-center text-sm font-medium transition-all",
+                  visitCategory === "therapy"
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                    : "border-border hover:bg-muted"
+                )}
+              >
+                Therapy
+              </button>
+            </div>
           </div>
 
-          {/* Phone consultation */}
-          {selectedClient && isPhoneVisit && (
+          {/* Sub-type selection */}
+          <div className="space-y-2">
+            <Label>{visitCategory === "consultation" ? "Consultation Type" : "Therapy Type"}</Label>
+            <Select value={visitSubType} onValueChange={(v) => { setVisitSubType(v); setSelectedPkgId(""); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {visitCategory === "consultation"
+                  ? CONSULTATION_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.label} — {t.duration} min</SelectItem>
+                    ))
+                  : THERAPY_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.label} — {t.duration} min</SelectItem>
+                    ))
+                }
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Duration: {currentType.duration} minutes</p>
+          </div>
+
+          {/* Phone consultation — free, no package needed */}
+          {isPhone && selectedClient && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-sm font-semibold text-primary">Free Phone Consultation</p>
-                <p className="text-xs text-muted-foreground">Complimentary — doesn't count as a package visit</p>
+                <p className="text-xs text-muted-foreground">Complimentary — doesn't require a package</p>
               </div>
             </div>
           )}
 
-          {/* Massage details */}
-          {isMassage && selectedClient && (
-            <div className="rounded-lg border border-sage/50 bg-sage/10 p-4 space-y-4">
-              <p className="text-sm font-semibold text-sage-foreground flex items-center gap-2">
-                <Package className="w-4 h-4" /> Massage Details
-              </p>
-              <div className="space-y-2">
-                <Label className="text-xs">Massage Type *</Label>
-                <Select value={massageType} onValueChange={setMassageType}>
-                  <SelectTrigger><SelectValue placeholder="Select massage..." /></SelectTrigger>
-                  <SelectContent>
-                    {MASSAGE_TYPES.map((mt) => (
-                      <SelectItem key={mt} value={mt}>{mt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Number of Sessions</Label>
-                <Select value={massageSessions} onValueChange={setMassageSessions}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{n} session{n > 1 ? "s" : ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+          {/* Package Selection: existing package or NTP */}
+          {selectedClient && !isPhone && (
+            <div className="space-y-2">
+              <Label>Package</Label>
+              <div className="grid gap-2">
+                {/* Existing active packages */}
+                {activeClientPkgs.map((pkg) => {
+                  const left = Math.max(0, pkg.size - pkg.visitsUsed);
+                  return (
+                    <button key={pkg.id} onClick={() => setSelectedPkgId(pkg.id)}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                        selectedPkgId === pkg.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:bg-muted"
+                      )}>
+                      <div>
+                        <p className="text-sm font-medium">{pkg.name}</p>
+                        <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-primary">{left} left</span>
+                        {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
+                      </div>
+                    </button>
+                  );
+                })}
 
-          {/* Panchakarma note — session config moved to Assign Package */}
-          {isPanchakarma && selectedClient && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 flex items-center gap-3">
-              <Layers className="w-4 h-4 text-orange-700" />
-              <p className="text-xs text-orange-800">
-                Panchakarma session details are configured when assigning the package.
-              </p>
-            </div>
-          )}
-
-          {selectedClient && !isPhoneVisit && (
-            <div className="space-y-3">
-              {/* Existing client packages */}
-              {activeClientPkgs.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Use Existing Package</Label>
-                  <div className="grid gap-2">
-                    {activeClientPkgs.map((pkg) => {
-                      const left = Math.max(0, pkg.size - pkg.visitsUsed);
-                      return (
-                        <button key={pkg.id} onClick={() => { setSelectedPkgId(pkg.id); setSelectedNewPkg(""); setShowCustomPackage(false); }}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
-                            selectedPkgId === pkg.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:bg-muted"
-                          )}>
-                          <div>
-                            <p className="text-sm font-medium">{pkg.name}</p>
-                            <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-primary">{left} left</span>
-                            {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
-                          </div>
-                        </button>
-                      );
-                    })}
+                {/* NTP Option */}
+                <button onClick={() => setSelectedPkgId("ntp")}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                    selectedPkgId === "ntp" ? "border-destructive bg-destructive/10 ring-1 ring-destructive" : "border-border hover:bg-muted"
+                  )}>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-destructive" />
+                    <div>
+                      <p className="text-sm font-medium">NTP — Need To Pay</p>
+                      <p className="text-xs text-muted-foreground">No package, client pays for this visit</p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Buy new package */}
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">
-                  {activeClientPkgs.length > 0 ? "Or Add New Package" : "Select Package *"}
-                </Label>
-                <PackageGrid
-                  packages={relevantPackages}
-                  selectedPackage={selectedNewPkg}
-                  onSelect={(name) => { setSelectedNewPkg(name); setSelectedPkgId(""); }}
-                  showCustomPackage={showCustomPackage}
-                  onShowCustom={() => { setShowCustomPackage(true); setSelectedNewPkg(""); setSelectedPkgId(""); }}
-                  onHideCustom={() => { setShowCustomPackage(false); setCustomName(""); setCustomPrice(""); setCustomSessions(""); }}
-                  customName={customName}
-                  customPrice={customPrice}
-                  customSessions={customSessions}
-                  onCustomName={setCustomName}
-                  onCustomPrice={setCustomPrice}
-                  onCustomSessions={setCustomSessions}
-                />
+                  {selectedPkgId === "ntp" && <CheckCircle className="w-4 h-4 text-destructive" />}
+                </button>
               </div>
             </div>
           )}
@@ -373,24 +369,19 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
             </Popover>
           </div>
 
-          {/* Time & Duration */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Time *</Label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Duration (min)</Label>
-              <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {[15, 30, 45, 60, 90, 120].map((d) => (
-                    <SelectItem key={d} value={String(d)}>{d} minutes</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Start Time */}
+          <div className="space-y-2">
+            <Label>Start Time *</Label>
+            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
           </div>
+
+          {/* Overlap Warning */}
+          {overlapWarning && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive">{overlapWarning}</p>
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
@@ -402,76 +393,5 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/* ── Reusable Package Grid ── */
-import type { Package as PkgType } from "@/data/mockData";
-
-interface PackageGridProps {
-  packages: PkgType[];
-  selectedPackage: string;
-  onSelect: (name: string) => void;
-  showCustomPackage: boolean;
-  onShowCustom: () => void;
-  onHideCustom: () => void;
-  customName: string;
-  customPrice: string;
-  customSessions: string;
-  onCustomName: (v: string) => void;
-  onCustomPrice: (v: string) => void;
-  onCustomSessions: (v: string) => void;
-}
-
-function PackageGrid({
-  packages, selectedPackage, onSelect,
-  showCustomPackage, onShowCustom, onHideCustom,
-  customName, customPrice, customSessions,
-  onCustomName, onCustomPrice, onCustomSessions,
-}: PackageGridProps) {
-  return (
-    <div className="grid gap-2">
-      {packages.map((pkg) => (
-        <button key={pkg.name} onClick={() => onSelect(pkg.name)}
-          className={cn(
-            "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
-            selectedPackage === pkg.name ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:bg-muted"
-          )}>
-          <div>
-            <p className="text-sm font-medium">{pkg.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {pkg.size > 0 ? `${pkg.size} session${pkg.size !== 1 ? "s" : ""}` : pkg.category}
-              {pkg.perSession > 0 ? ` · $${pkg.perSession.toFixed(0)}/session` : ""}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold">${pkg.price.toLocaleString()}</span>
-            {selectedPackage === pkg.name && <CheckCircle className="w-4 h-4 text-primary" />}
-          </div>
-        </button>
-      ))}
-
-      {!showCustomPackage ? (
-        <button onClick={onShowCustom}
-          className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-border hover:bg-muted transition-all text-left">
-          <PlusCircle className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Custom Package</span>
-        </button>
-      ) : (
-        <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-primary">Custom Package</p>
-            <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground px-2" onClick={onHideCustom}>
-              ✕ Cancel
-            </Button>
-          </div>
-          <Input placeholder="Package name" value={customName} onChange={(e) => onCustomName(e.target.value)} className="h-8 text-sm" />
-          <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="Price ($)" type="number" value={customPrice} onChange={(e) => onCustomPrice(e.target.value)} className="h-8 text-sm" />
-            <Input placeholder="Sessions" type="number" value={customSessions} onChange={(e) => onCustomSessions(e.target.value)} className="h-8 text-sm" />
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
