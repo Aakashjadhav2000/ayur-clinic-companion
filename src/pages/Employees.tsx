@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UserPlus, Trash2, Shield, User } from "lucide-react";
@@ -12,7 +13,7 @@ import { toast } from "sonner";
 interface EmployeeRow {
   user_id: string;
   display_name: string;
-  role: "admin" | "employee";
+  role: "admin" | "employee" | "frontdesk";
 }
 
 export default function Employees() {
@@ -23,6 +24,7 @@ export default function Employees() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [newRole, setNewRole] = useState<"admin" | "frontdesk">("frontdesk");
   const [creating, setCreating] = useState(false);
 
   const fetchEmployees = async () => {
