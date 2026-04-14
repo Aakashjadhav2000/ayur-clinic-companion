@@ -300,7 +300,55 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
             </div>
           )}
 
-          {/* Package Selection - for all non-phone visits */}
+          {/* Panchakarma Program Builder */}
+          {isPanchakarma && selectedClient && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2 text-orange-800">
+                <Layers className="w-4 h-4" /> Panchakarma Program — Adjust Sessions
+              </p>
+              <p className="text-xs text-muted-foreground">Customize the therapy and consultation sessions for this client's program</p>
+              <div className="space-y-2">
+                {panchaComps.map((comp, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-2 rounded bg-background border border-border">
+                    <span className="text-sm font-medium flex-1">{comp.type}</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline" size="icon" className="h-7 w-7"
+                        onClick={() => {
+                          if (comp.sessions > 0) {
+                            const updated = [...panchaComps];
+                            updated[idx] = { ...comp, sessions: comp.sessions - 1 };
+                            setPanchaComps(updated);
+                          }
+                        }}
+                      >−</Button>
+                      <span className="text-sm font-bold w-6 text-center">{comp.sessions}</span>
+                      <Button
+                        variant="outline" size="icon" className="h-7 w-7"
+                        onClick={() => {
+                          const updated = [...panchaComps];
+                          updated[idx] = { ...comp, sessions: comp.sessions + 1 };
+                          setPanchaComps(updated);
+                        }}
+                      >+</Button>
+                    </div>
+                    <span className="text-xs text-muted-foreground w-12 text-right">{comp.duration}min</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 h-7" onClick={() => {
+                  setPanchaComps((prev) => [...prev, { type: "Consultation", sessions: 1, duration: 30 }]);
+                }}>
+                  <PlusCircle className="w-3 h-3" /> Add Component
+                </Button>
+                <p className="text-xs font-medium text-orange-700">
+                  Total: {panchaComps.reduce((s, c) => s + c.sessions, 0)} sessions
+                </p>
+              </div>
+            </div>
+          )}
+
           {selectedClient && !isPhoneVisit && (
             <div className="space-y-3">
               {/* Existing client packages */}
