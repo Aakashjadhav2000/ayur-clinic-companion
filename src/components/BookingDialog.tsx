@@ -135,6 +135,13 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
       client.packages.push(newPkg);
     }
 
+    // Build notes with Panchakarma details if applicable
+    let finalNotes = notes;
+    if (isPanchakarma && panchaComps.length > 0) {
+      const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type} (${c.duration}min)`).join(", ");
+      finalNotes = `Panchakarma Program: ${compSummary}${notes ? " | " + notes : ""}`;
+    }
+
     addVisit({
       clientId: client.id,
       clientName: `${client.firstName} ${client.lastName}`,
@@ -144,7 +151,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
       duration: dur,
       colorId: selectedType.colorId,
       visitType: isMassage ? `Massage - ${massageType}` : selectedType.label,
-      notes: isMassage ? `${massageType} | ${massageSessions} session(s) | ${notes}` : notes,
+      notes: isMassage ? `${massageType} | ${massageSessions} session(s) | ${notes}` : finalNotes,
       packageType: pkgName || undefined,
     });
 
