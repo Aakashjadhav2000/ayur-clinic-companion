@@ -44,13 +44,32 @@ export default function Packages() {
     toast.success(`"${pkg.name}" added`);
   };
 
-  const handleAddMassageTypePkg = (mt: MassageType, pkg: Package) => {
-    const massagePkg: MassagePackage = { ...pkg, massageType: mt, category: "Massage" };
+  const handleAddMassageTypePkg = (mt: string, pkg: Package) => {
+    const massagePkg: MassagePackage = { ...pkg, massageType: mt as MassageType, category: "Massage" };
     setMassagePkgsByType((prev) => ({
       ...prev,
-      [mt]: [...prev[mt], massagePkg],
+      [mt]: [...(prev[mt] || []), massagePkg],
     }));
     toast.success(`"${pkg.name}" added to ${mt}`);
+  };
+
+  const handleAddMassageType = () => {
+    const name = newType.name.trim();
+    if (!name) return;
+    if (allMassageTypes.includes(name)) { toast.error("Type already exists"); return; }
+    setAllMassageTypes((prev) => [...prev, name]);
+    setMassageDetails((prev) => ({ ...prev, [name]: { description: newType.description, duration: newType.duration + " min", benefits: newType.benefits } }));
+    setMassagePkgsByType((prev) => ({ ...prev, [name]: [] }));
+    toast.success(`"${name}" massage type added`);
+    setNewType({ name: "", description: "", duration: "30", benefits: "" });
+    setAddTypeOpen(false);
+  };
+
+  const handleDeleteMassageType = (mt: string) => {
+    setAllMassageTypes((prev) => prev.filter((t) => t !== mt));
+    setMassagePkgsByType((prev) => { const copy = { ...prev }; delete copy[mt]; return copy; });
+    setMassageDetails((prev) => { const copy = { ...prev }; delete copy[mt]; return copy; });
+    toast.success(`"${mt}" massage type removed`);
   };
 
   const handleEditSave = (section: string) => {
