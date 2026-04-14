@@ -41,7 +41,7 @@ export default function ReachOut() {
   // Compute clients needing reach-out
   const { toCall, didntAnswer } = useMemo(() => {
     const toCallList: (Client & { daysSince: number })[] = [];
-    const didntAnswerList: (Client & { daysSince: number; dismissedAt: Date; retryIn: number })[] = [];
+    const didntAnswerList: (Client & { daysSince: number; dismissedAt: string; retryIn: number })[] = [];
 
     clients.forEach((client) => {
       const allVisits = getClientVisits(client.id);
