@@ -43,6 +43,12 @@ export interface Package {
   complimentary: boolean;
 }
 
+export const consultationPackages: Package[] = [
+  { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false },
+  { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false },
+  { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true },
+];
+
 export const MASSAGE_TYPES = ["Abhyanga", "Shirodhara", "Nasya", "Eye Treatment"] as const;
 export type MassageType = typeof MASSAGE_TYPES[number];
 
