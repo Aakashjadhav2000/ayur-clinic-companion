@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Phone, PhoneOff, PhoneMissed, CalendarCheck, Clock, Mail, RotateCcw } from "lucide-react";
-import { clients, getClientVisits, type Client } from "@/data/mockData";
+import { clients, type Client } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -30,6 +31,8 @@ export default function ReachOut() {
   const [dismissed, setDismissed] = useState<DismissedEntry[]>(loadDismissed);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const storeVisits = useVisitsStore((s) => s.visits);
+
   // Persist dismissed list to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
@@ -44,7 +47,7 @@ export default function ReachOut() {
     const didntAnswerList: (Client & { daysSince: number; dismissedAt: string; retryIn: number })[] = [];
 
     clients.forEach((client) => {
-      const allVisits = getClientVisits(client.id);
+      const allVisits = storeVisits.filter((v) => v.clientId === client.id);
       const hasFuture = allVisits.some((v) => v.date > todayStr);
       if (hasFuture) return; // has upcoming appointment — skip
 
@@ -75,7 +78,7 @@ export default function ReachOut() {
 
     return { toCall: toCallList, didntAnswer: didntAnswerList };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todayStr, dismissed, refreshKey]);
+  }, [todayStr, dismissed, refreshKey, storeVisits]);
 
   const markDidntAnswer = (clientId: string) => {
     setDismissed((prev) => [
