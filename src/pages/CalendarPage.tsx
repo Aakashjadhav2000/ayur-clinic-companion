@@ -267,11 +267,30 @@ export default function CalendarPage() {
 
   // ── Block handlers ──
   const saveBlock = () => {
-    if (blockStart >= blockEnd) { toast.error("End time must be after start"); return; }
-    addBlock({ date: selectedDate, startTime: blockStart, endTime: blockEnd, lane: blockLane, reason: blockReason || "Blocked" });
-    toast.success(`${blockLane === "consultation" ? "Consultation" : "Therapy"} blocked`);
+    const start = blockFullDay ? "08:00" : blockStart;
+    const end = blockFullDay ? "20:00" : blockEnd;
+    if (start >= end) { toast.error("End time must be after start"); return; }
+    if (!blockDateRange.from) { toast.error("Please select at least one date"); return; }
+
+    const fromDate = new Date(blockDateRange.from);
+    const toDate = blockDateRange.to ? new Date(blockDateRange.to) : fromDate;
+    const lanes: ("consultation" | "therapy")[] = blockLane === "both" ? ["consultation", "therapy"] : [blockLane];
+    
+    let count = 0;
+    const current = new Date(fromDate);
+    while (current <= toDate) {
+      const dateStr = current.toISOString().split("T")[0];
+      for (const lane of lanes) {
+        addBlock({ date: dateStr, startTime: start, endTime: end, lane, reason: blockReason || "Blocked" });
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    toast.success(`Blocked ${count} slot${count > 1 ? "s" : ""} across ${Math.ceil((toDate.getTime() - fromDate.getTime()) / 86400000) + 1} day(s)`);
     setBlockOpen(false);
     setBlockReason("");
+    setBlockFullDay(true);
   };
 
   // ── Drag handlers ──
