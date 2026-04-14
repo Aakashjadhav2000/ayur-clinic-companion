@@ -63,6 +63,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const isPhoneVisit = selectedType.colorId === 1 || selectedType.colorId === 3;
   const isMassage = selectedType.section === "massage";
   const isSpecialty = selectedType.section === "specialty";
+  const isPanchakarma = selectedType.colorId === 10;
 
   const activeClientPkgs = selectedClient ? getActivePackages(selectedClient) : [];
 
