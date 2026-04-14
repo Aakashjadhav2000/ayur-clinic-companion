@@ -391,6 +391,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
                   onSelect={(name) => { setSelectedNewPkg(name); setSelectedPkgId(""); }}
                   showCustomPackage={showCustomPackage}
                   onShowCustom={() => { setShowCustomPackage(true); setSelectedNewPkg(""); setSelectedPkgId(""); }}
+                  onHideCustom={() => { setShowCustomPackage(false); setCustomName(""); setCustomPrice(""); setCustomSessions(""); }}
                   customName={customName}
                   customPrice={customPrice}
                   customSessions={customSessions}
