@@ -79,7 +79,9 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   const [visitSubType, setVisitSubType] = useState("consultation"); // id from the type arrays
   const [notes, setNotes] = useState("");
   const [clientSearch, setClientSearch] = useState("");
-  const [selectedPkgId, setSelectedPkgId] = useState(""); // existing package or "ntp"
+  const [selectedPkgId, setSelectedPkgId] = useState(""); // existing package or "ntp" or "comp_xxx"
+  const [compSearch, setCompSearch] = useState("");
+  const [compExpanded, setCompExpanded] = useState(false);
 
   const addVisit = useVisitsStore((s) => s.addVisit);
   const visits = useVisitsStore((s) => s.visits);
