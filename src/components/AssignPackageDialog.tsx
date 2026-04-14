@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Layers, PlusCircle } from "lucide-react";
+import { Package, Layers, PlusCircle, AlertTriangle } from "lucide-react";
 import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, specialtyPrograms, type ClientPackage, type ProgramComponent } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 let pkgIdCounter = 500;
 
