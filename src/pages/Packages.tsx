@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { consultationPackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, type Package, type MassagePackage, type MassageType } from "@/data/mockData";
-import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle } from "lucide-react";
+import { Check, X, PlusCircle, Sparkles, Hand, Pencil, Save, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -404,4 +404,4 @@ function AddPackageDialog({ section, onAdd }: { section: string; onAdd: (pkg: Pa
   );
 }
 
-import { Trash2 } from "lucide-react";
+
