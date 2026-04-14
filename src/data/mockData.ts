@@ -113,6 +113,30 @@ export const specialtyPackages: Package[] = [
   { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false, duration: 60 },
 ];
 
+export const specialtyPrograms: SpecialtyProgram[] = [
+  {
+    id: "garbhasanskar",
+    name: "Garbhasanskar",
+    description: "Prenatal wellness program — runs until pregnancy is completed. Sessions are unlimited.",
+    price: 1400,
+    mode: "unlimited",
+    duration: 45,
+  },
+  {
+    id: "panchakarma",
+    name: "Panchakarma",
+    description: "Full body cleansing program with a combination of therapies and consultations.",
+    price: 2500,
+    mode: "combo",
+    components: [
+      { type: "Consultation (Pre)", sessions: 1, duration: 30 },
+      { type: "Abhyanga", sessions: 3, duration: 60 },
+      { type: "Shirodhara", sessions: 2, duration: 45 },
+      { type: "Consultation (Post)", sessions: 1, duration: 30 },
+    ],
+  },
+];
+
 export const packages: Package[] = [...consultationPackages, ...massagePackages, ...specialtyPackages];
 
 export const COLOR_MAP: Record<number, { label: string; color: string; bg: string }> = {
