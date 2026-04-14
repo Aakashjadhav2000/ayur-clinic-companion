@@ -150,7 +150,6 @@ export default function Employees() {
               <Button onClick={handleCreateEmployee} className="w-full" disabled={creating}>
                 {creating ? "Creating…" : "Create Employee"}
               </Button>
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
