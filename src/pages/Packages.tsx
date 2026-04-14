@@ -21,17 +21,21 @@ const DURATION_OPTIONS = [15, 20, 30, 45, 60, 90, 120];
 
 export default function Packages() {
   const [consulPkgs, setConsulPkgs] = useState<Package[]>([...consultationPackages]);
-  const [massagePkgsByType, setMassagePkgsByType] = useState<Record<MassageType, MassagePackage[]>>(() => {
+  const [allMassageTypes, setAllMassageTypes] = useState<string[]>([...MASSAGE_TYPES]);
+  const [massageDetails, setMassageDetails] = useState<Record<string, { description: string; duration: string; benefits: string }>>({ ...MASSAGE_DETAILS });
+  const [massagePkgsByType, setMassagePkgsByType] = useState<Record<string, MassagePackage[]>>(() => {
     const copy: Record<string, MassagePackage[]> = {};
     for (const mt of MASSAGE_TYPES) {
       copy[mt] = [...massagePackagesByType[mt]];
     }
-    return copy as Record<MassageType, MassagePackage[]>;
+    return copy;
   });
   const [customMassagePkgs, setCustomMassagePkgs] = useState<Package[]>([]);
   const [specialPkgs, setSpecialPkgs] = useState<Package[]>([...specialtyPackages]);
   const [editingPkg, setEditingPkg] = useState<{ key: string; name: string; price: string; size: string; duration: string } | null>(null);
-  const [editingMassage, setEditingMassage] = useState<{ type: MassageType; index: number; price: string; size: string; duration: string } | null>(null);
+  const [editingMassage, setEditingMassage] = useState<{ type: string; index: number; price: string; size: string; duration: string } | null>(null);
+  const [addTypeOpen, setAddTypeOpen] = useState(false);
+  const [newType, setNewType] = useState({ name: "", description: "", duration: "30", benefits: "" });
 
   const handleAdd = (pkg: Package, section: string) => {
     if (section === "consultation") setConsulPkgs((p) => [...p, pkg]);
@@ -40,13 +44,32 @@ export default function Packages() {
     toast.success(`"${pkg.name}" added`);
   };
 
-  const handleAddMassageTypePkg = (mt: MassageType, pkg: Package) => {
-    const massagePkg: MassagePackage = { ...pkg, massageType: mt, category: "Massage" };
+  const handleAddMassageTypePkg = (mt: string, pkg: Package) => {
+    const massagePkg: MassagePackage = { ...pkg, massageType: mt as MassageType, category: "Massage" };
     setMassagePkgsByType((prev) => ({
       ...prev,
-      [mt]: [...prev[mt], massagePkg],
+      [mt]: [...(prev[mt] || []), massagePkg],
     }));
     toast.success(`"${pkg.name}" added to ${mt}`);
+  };
+
+  const handleAddMassageType = () => {
+    const name = newType.name.trim();
+    if (!name) return;
+    if (allMassageTypes.includes(name)) { toast.error("Type already exists"); return; }
+    setAllMassageTypes((prev) => [...prev, name]);
+    setMassageDetails((prev) => ({ ...prev, [name]: { description: newType.description, duration: newType.duration + " min", benefits: newType.benefits } }));
+    setMassagePkgsByType((prev) => ({ ...prev, [name]: [] }));
+    toast.success(`"${name}" massage type added`);
+    setNewType({ name: "", description: "", duration: "30", benefits: "" });
+    setAddTypeOpen(false);
+  };
+
+  const handleDeleteMassageType = (mt: string) => {
+    setAllMassageTypes((prev) => prev.filter((t) => t !== mt));
+    setMassagePkgsByType((prev) => { const copy = { ...prev }; delete copy[mt]; return copy; });
+    setMassageDetails((prev) => { const copy = { ...prev }; delete copy[mt]; return copy; });
+    toast.success(`"${mt}" massage type removed`);
   };
 
   const handleEditSave = (section: string) => {
@@ -96,7 +119,7 @@ export default function Packages() {
     setEditingMassage(null);
   };
 
-  const handleDeleteMassagePkg = (mt: MassageType, idx: number) => {
+  const handleDeleteMassagePkg = (mt: string, idx: number) => {
     setMassagePkgsByType((prev) => ({
       ...prev,
       [mt]: prev[mt].filter((_, i) => i !== idx),
@@ -154,13 +177,57 @@ export default function Packages() {
             </TabsList>
 
             <TabsContent value="types" className="space-y-6">
-              <div>
-                <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
-                <p className="text-sm text-muted-foreground">Hover to edit, or add new packages per type</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-xl font-semibold">Massage Types & Pricing</h2>
+                  <p className="text-sm text-muted-foreground">Hover to edit, or add new packages per type</p>
+                </div>
+                <Dialog open={addTypeOpen} onOpenChange={setAddTypeOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <PlusCircle className="w-4 h-4" /> Add Massage Type
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Massage Type</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 pt-2">
+                      <div>
+                        <Label>Name *</Label>
+                        <Input placeholder="e.g. Sinus Treatment" value={newType.name} onChange={(e) => setNewType({ ...newType, name: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Input placeholder="Brief description" value={newType.description} onChange={(e) => setNewType({ ...newType, description: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Default Duration (min)</Label>
+                          <Select value={newType.duration} onValueChange={(v) => setNewType({ ...newType, duration: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {DURATION_OPTIONS.map((d) => (
+                                <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Benefits</Label>
+                          <Input placeholder="Key benefits" value={newType.benefits} onChange={(e) => setNewType({ ...newType, benefits: e.target.value })} />
+                        </div>
+                      </div>
+                      <Button className="w-full" onClick={handleAddMassageType} disabled={!newType.name.trim()}>
+                        <PlusCircle className="w-4 h-4 mr-1" /> Add Massage Type
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
-              {MASSAGE_TYPES.map((mt) => {
-                const detail = MASSAGE_DETAILS[mt];
-                const pkgs = massagePkgsByType[mt];
+              {allMassageTypes.map((mt) => {
+                const detail = massageDetails[mt];
+                const pkgs = massagePkgsByType[mt] || [];
                 return (
                   <div key={mt} className="bg-card rounded-lg border border-border p-5 space-y-4">
                     <div className="flex items-center justify-between">
@@ -173,11 +240,16 @@ export default function Packages() {
                           <p className="text-xs text-muted-foreground">{detail?.duration} · {detail?.description}</p>
                         </div>
                       </div>
-                      <AddPackageDialog
-                        section="massage-type"
-                        massageTypeName={mt}
-                        onAdd={(pkg) => handleAddMassageTypePkg(mt, pkg)}
-                      />
+                      <div className="flex items-center gap-1">
+                        <AddPackageDialog
+                          section="massage-type"
+                          massageTypeName={mt}
+                          onAdd={(pkg) => handleAddMassageTypePkg(mt, pkg)}
+                        />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteMassageType(mt)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {pkgs.map((pkg, idx) => {
