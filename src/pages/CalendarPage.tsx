@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight, Plus, Ban, X, Clock, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Ban, X, Clock, Pencil, Trash2, CalendarDays, GripVertical } from "lucide-react";
 import { COLOR_MAP, Visit } from "@/data/mockData";
 import { useVisitsStore, TimeBlock } from "@/stores/visitsStore";
 import VisitBadge from "@/components/VisitBadge";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ── helpers ──
 function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
@@ -17,10 +18,25 @@ function getFirstDayOfWeek(y: number, m: number) { return new Date(y, m, 1).getD
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM – 7 PM
 const SLOT_H = 60; // px per hour
+const SNAP_MINUTES = 15; // snap drag to 15-min increments
 
 function timeToY(time: string) {
   const [h, m] = time.split(":").map(Number);
   return (h - 8) * SLOT_H + (m / 60) * SLOT_H;
+}
+
+function yToMinutes(y: number) {
+  return Math.round((y / SLOT_H) * 60) + 8 * 60;
+}
+
+function snapMinutes(mins: number) {
+  return Math.round(mins / SNAP_MINUTES) * SNAP_MINUTES;
+}
+
+function minutesToTime(totalMins: number) {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 function formatHour(h: number) {
@@ -29,12 +45,132 @@ function formatHour(h: number) {
   return `${hr} ${ampm}`;
 }
 
-// ── Visit lane helper ──
+function formatTime12(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${hr}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
 function getVisitLane(v: Visit): "consultation" | "therapy" {
   const ct = v.colorId;
-  // 0 = consultation, 1/3 = phone consult, 9 = garbhasanskar
   if (ct === 0 || ct === 1 || ct === 3 || ct === 9) return "consultation";
   return "therapy";
+}
+
+// ── Time Picker Wheel Component (Apple-style) ──
+function TimePickerWheel({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [h, m] = value.split(":").map(Number);
+  const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8-19
+  const minutes = [0, 15, 30, 45];
+
+  const hourRef = useRef<HTMLDivElement>(null);
+  const minRef = useRef<HTMLDivElement>(null);
+  const ITEM_H = 40;
+
+  useEffect(() => {
+    if (hourRef.current) {
+      const idx = hours.indexOf(h);
+      hourRef.current.scrollTop = idx * ITEM_H;
+    }
+    if (minRef.current) {
+      const idx = minutes.indexOf(m >= 45 ? 45 : m >= 30 ? 30 : m >= 15 ? 15 : 0);
+      minRef.current.scrollTop = idx * ITEM_H;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleHourScroll = () => {
+    if (!hourRef.current) return;
+    const idx = Math.round(hourRef.current.scrollTop / ITEM_H);
+    const newH = hours[Math.min(idx, hours.length - 1)];
+    if (newH !== h) onChange(`${newH.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+  };
+
+  const handleMinScroll = () => {
+    if (!minRef.current) return;
+    const idx = Math.round(minRef.current.scrollTop / ITEM_H);
+    const newM = minutes[Math.min(idx, minutes.length - 1)];
+    if (newM !== (m >= 45 ? 45 : m >= 30 ? 30 : m >= 15 ? 15 : 0)) onChange(`${h.toString().padStart(2, "0")}:${newM.toString().padStart(2, "0")}`);
+  };
+
+  const setTime = (newH: number, newM: number) => {
+    onChange(`${newH.toString().padStart(2, "0")}:${newM.toString().padStart(2, "0")}`);
+    if (hourRef.current) hourRef.current.scrollTo({ top: hours.indexOf(newH) * ITEM_H, behavior: "smooth" });
+    if (minRef.current) minRef.current.scrollTo({ top: minutes.indexOf(newM) * ITEM_H, behavior: "smooth" });
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <Label className="text-xs text-muted-foreground mb-2">{label}</Label>
+      <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 border border-border">
+        {/* Hour wheel */}
+        <div className="relative h-[120px] w-[56px] overflow-hidden">
+          <div className="absolute inset-x-0 top-[40px] h-[40px] bg-primary/10 rounded-lg border border-primary/20 pointer-events-none z-10" />
+          <div
+            ref={hourRef}
+            onScroll={handleHourScroll}
+            className="h-full overflow-y-auto scrollbar-hide snap-y snap-mandatory"
+            style={{ scrollSnapType: "y mandatory", paddingTop: 40, paddingBottom: 40 }}
+          >
+            {hours.map((hr) => {
+              const isActive = hr === h;
+              const display = hr > 12 ? hr - 12 : hr === 0 ? 12 : hr;
+              return (
+                <button
+                  key={hr}
+                  onClick={() => setTime(hr, m >= 45 ? 45 : m >= 30 ? 30 : m >= 15 ? 15 : 0)}
+                  className={cn(
+                    "w-full h-[40px] flex items-center justify-center text-sm snap-center transition-all",
+                    isActive ? "font-bold text-primary scale-110" : "text-muted-foreground"
+                  )}
+                >
+                  {display}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <span className="text-lg font-bold text-muted-foreground">:</span>
+
+        {/* Minute wheel */}
+        <div className="relative h-[120px] w-[56px] overflow-hidden">
+          <div className="absolute inset-x-0 top-[40px] h-[40px] bg-primary/10 rounded-lg border border-primary/20 pointer-events-none z-10" />
+          <div
+            ref={minRef}
+            onScroll={handleMinScroll}
+            className="h-full overflow-y-auto scrollbar-hide snap-y snap-mandatory"
+            style={{ scrollSnapType: "y mandatory", paddingTop: 40, paddingBottom: 40 }}
+          >
+            {minutes.map((mn) => {
+              const closestM = m >= 45 ? 45 : m >= 30 ? 30 : m >= 15 ? 15 : 0;
+              const isActive = mn === closestM;
+              return (
+                <button
+                  key={mn}
+                  onClick={() => setTime(h, mn)}
+                  className={cn(
+                    "w-full h-[40px] flex items-center justify-center text-sm snap-center transition-all",
+                    isActive ? "font-bold text-primary scale-110" : "text-muted-foreground"
+                  )}
+                >
+                  {mn.toString().padStart(2, "0")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* AM/PM */}
+        <div className="flex flex-col gap-1 ml-1">
+          <span className={cn("text-[10px] px-1.5 py-0.5 rounded", h < 12 ? "bg-primary text-primary-foreground font-bold" : "text-muted-foreground")}>AM</span>
+          <span className={cn("text-[10px] px-1.5 py-0.5 rounded", h >= 12 ? "bg-primary text-primary-foreground font-bold" : "text-muted-foreground")}>PM</span>
+        </div>
+      </div>
+      <p className="text-sm font-semibold mt-2 text-foreground">{formatTime12(value)}</p>
+    </div>
+  );
 }
 
 // ── Main Component ──
@@ -61,6 +197,10 @@ export default function CalendarPage() {
   const [blockStart, setBlockStart] = useState("09:00");
   const [blockEnd, setBlockEnd] = useState("10:00");
   const [blockReason, setBlockReason] = useState("");
+
+  // Drag state
+  const [dragging, setDragging] = useState<{ visitId: number; startY: number; origStartMins: number; origDuration: number } | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ top: number; height: number } | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -90,6 +230,7 @@ export default function CalendarPage() {
 
   // ── Edit handlers ──
   const openEdit = (v: Visit) => {
+    if (dragging) return; // don't open on drag end
     setEditVisit(v);
     setEditStart(v.startTime);
     setEditEnd(v.endTime);
@@ -128,6 +269,57 @@ export default function CalendarPage() {
     setBlockOpen(false);
     setBlockReason("");
   };
+
+  // ── Drag handlers ──
+  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent, v: Visit) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const [sh, sm] = v.startTime.split(":").map(Number);
+    setDragging({ visitId: v.id, startY: clientY, origStartMins: sh * 60 + sm, origDuration: v.duration });
+    setDragPreview({ top: timeToY(v.startTime), height: (v.duration / 60) * SLOT_H });
+  }, []);
+
+  const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!dragging) return;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = clientY - dragging.startY;
+    const deltaMins = (deltaY / SLOT_H) * 60;
+    const newStartMins = snapMinutes(dragging.origStartMins + deltaMins);
+    const clampedStart = Math.max(8 * 60, Math.min(19 * 60 - dragging.origDuration, newStartMins));
+    setDragPreview({
+      top: ((clampedStart - 8 * 60) / 60) * SLOT_H,
+      height: (dragging.origDuration / 60) * SLOT_H,
+    });
+  }, [dragging]);
+
+  const handleDragEnd = useCallback(() => {
+    if (!dragging || !dragPreview) { setDragging(null); setDragPreview(null); return; }
+    const newStartMins = yToMinutes(dragPreview.top);
+    const snapped = snapMinutes(newStartMins);
+    const newStart = minutesToTime(snapped);
+    const newEnd = minutesToTime(snapped + dragging.origDuration);
+    updateVisit(dragging.visitId, { startTime: newStart, endTime: newEnd });
+    toast.success(`Moved to ${formatTime12(newStart)}`);
+    setDragging(null);
+    setDragPreview(null);
+  }, [dragging, dragPreview, updateVisit]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e: MouseEvent | TouchEvent) => handleDragMove(e);
+    const end = () => handleDragEnd();
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", end);
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", end);
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", end);
+    };
+  }, [dragging, handleDragMove, handleDragEnd]);
 
   // ── Render time grid lane ──
   const renderLane = (laneVisits: Visit[], laneBlocks: TimeBlock[], label: string) => (
@@ -169,20 +361,49 @@ export default function CalendarPage() {
           );
         })}
 
+        {/* Drag preview ghost */}
+        {dragging && dragPreview && laneVisits.some((v) => v.id === dragging.visitId) && (
+          <div
+            className="absolute left-1 right-1 rounded-md bg-primary/20 border-2 border-primary border-dashed z-30 pointer-events-none flex items-center justify-center"
+            style={{ top: dragPreview.top, height: Math.max(dragPreview.height, 24) }}
+          >
+            <span className="text-[10px] font-semibold text-primary">
+              {formatTime12(minutesToTime(snapMinutes(yToMinutes(dragPreview.top))))}
+            </span>
+          </div>
+        )}
+
         {/* Visits */}
         {laneVisits.map((v) => {
           const info = COLOR_MAP[v.colorId] || COLOR_MAP[0];
-          const top = timeToY(v.startTime);
+          const isDraggingThis = dragging?.visitId === v.id;
+          const top = isDraggingThis && dragPreview ? dragPreview.top : timeToY(v.startTime);
           const height = (v.duration / 60) * SLOT_H;
           const isCancelled = v.colorId === 11;
 
           return (
-            <button
+            <div
               key={v.id}
-              onClick={() => openEdit(v)}
-              className={`absolute left-1 right-1 rounded-md px-2 py-1 text-left transition-all hover:ring-2 hover:ring-primary/40 z-20 ${info.bg} ${isCancelled ? "opacity-50 line-through" : ""}`}
+              className={cn(
+                "absolute left-1 right-1 rounded-md px-2 py-1 text-left transition-shadow z-20 group/visit",
+                info.bg,
+                isCancelled && "opacity-50 line-through",
+                isDraggingThis && "opacity-70 shadow-lg ring-2 ring-primary scale-[1.02]",
+                !isDraggingThis && "hover:ring-2 hover:ring-primary/40 cursor-pointer"
+              )}
               style={{ top, height: Math.max(height, 24) }}
+              onClick={() => !dragging && openEdit(v)}
             >
+              {/* Drag handle */}
+              {!isCancelled && (
+                <div
+                  className="absolute top-0 left-0 right-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover/visit:opacity-100 transition-opacity"
+                  onMouseDown={(e) => handleDragStart(e, v)}
+                  onTouchStart={(e) => handleDragStart(e, v)}
+                >
+                  <GripVertical className="w-3 h-3 text-muted-foreground" />
+                </div>
+              )}
               <p className={`text-[11px] font-semibold truncate ${info.color}`}>{v.clientName}</p>
               {height >= 36 && (
                 <p className={`text-[10px] ${info.color} opacity-70`}>{v.startTime} – {v.endTime}</p>
@@ -190,19 +411,15 @@ export default function CalendarPage() {
               {height >= 50 && v.visitType && (
                 <p className={`text-[10px] ${info.color} opacity-60`}>{v.visitType}</p>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
     </div>
   );
 
-  // ── Current time indicator ──
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
-  const isToday = selectedDate === todayStr;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const nowY = ((now.getHours() - 8) * SLOT_H) + (now.getMinutes() / 60) * SLOT_H;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -294,15 +511,15 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* ═══ DAY VIEW — Google Calendar style ═══ */}
+      {/* ═══ DAY VIEW ═══ */}
       {viewMode === "day" && (
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          {/* Summary bar */}
           <div className="flex items-center gap-4 px-4 py-3 border-b border-border bg-muted/30 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {dayVisits.length} appointments</span>
             <span>{consultVisits.length} consultations</span>
             <span>{therapyVisits.length} therapies</span>
             {dayBlocks.length > 0 && <span className="text-destructive">{dayBlocks.length} blocked</span>}
+            <span className="ml-auto text-[10px] italic">Drag appointments to reschedule</span>
           </div>
 
           <div className="flex overflow-x-auto">
@@ -318,22 +535,10 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Consultation lane */}
             {renderLane(consultVisits, consultBlocks, "Consultation")}
-
-            {/* Divider */}
             <div className="w-px bg-border shrink-0" />
-
-            {/* Therapy lane */}
             {renderLane(therapyVisits, therapyBlocks, "Therapy")}
           </div>
-
-          {/* Current time line */}
-          {isToday && nowMinutes >= 480 && nowMinutes <= 1200 && (
-            <div className="pointer-events-none absolute" style={{ top: 0 }}>
-              {/* Rendered via CSS in the lanes above would be ideal, but simplified here */}
-            </div>
-          )}
         </div>
       )}
 
@@ -346,7 +551,7 @@ export default function CalendarPage() {
             </DialogTitle>
           </DialogHeader>
           {editVisit && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                   {editVisit.clientName.split(" ").map((n) => n[0]).join("")}
@@ -360,19 +565,14 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Start Time</Label>
-                  <Input type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">End Time</Label>
-                  <Input type="time" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
-                </div>
+              {/* Apple-style time pickers */}
+              <div className="flex justify-center gap-8">
+                <TimePickerWheel value={editStart} onChange={setEditStart} label="Start" />
+                <TimePickerWheel value={editEnd} onChange={setEditEnd} label="End" />
               </div>
 
               {editVisit.packageType && (
-                <p className="text-xs text-muted-foreground">Package: {editVisit.packageType}</p>
+                <p className="text-xs text-muted-foreground text-center">Package: {editVisit.packageType}</p>
               )}
             </div>
           )}
