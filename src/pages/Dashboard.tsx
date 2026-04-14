@@ -3,14 +3,14 @@ import StatCard from "@/components/StatCard";
 import VisitBadge from "@/components/VisitBadge";
 import BookingDialog from "@/components/BookingDialog";
 import AssignPackageDialog from "@/components/AssignPackageDialog";
-import { clients } from "@/data/mockData";
+import { clients, getActivePackages } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 
 export default function Dashboard() {
   const visits = useVisitsStore((s) => s.visits);
   const today = new Date().toISOString().split("T")[0];
   const todayVisits = visits.filter((v) => v.date === today).slice(0, 5);
-  const activePackages = clients.filter((c) => c.activePackage).length;
+  const activePackages = clients.filter((c) => getActivePackages(c).length > 0).length;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -66,8 +66,8 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">{client.totalVisits} visits</p>
                   </div>
                 </div>
-                {client.activePackage && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">{client.activePackage}</span>
+                {getActivePackages(client).length > 0 && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">{getActivePackages(client).length} pkg(s)</span>
                 )}
               </div>
             ))}
