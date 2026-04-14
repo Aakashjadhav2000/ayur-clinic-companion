@@ -208,6 +208,20 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
             </div>
           )}
 
+          {/* NTP retroactive notice */}
+          {selectedClient && clientNtpVisitsToday.length > 0 && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50/50 p-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">NTP Visit Today</p>
+                <p className="text-xs text-amber-700">
+                  {selectedClient.firstName} has {clientNtpVisitsToday.length} unpaid visit(s) today.
+                  Assigning a package will retroactively deduct 1 visit.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Package Selection */}
           {!customMode ? (
             <div className="space-y-2">
