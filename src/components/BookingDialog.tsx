@@ -176,6 +176,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
     setCustomName("");
     setCustomPrice("");
     setCustomSessions("");
+    if (panchakarmaProgram?.components) setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
   };
 
   return (
