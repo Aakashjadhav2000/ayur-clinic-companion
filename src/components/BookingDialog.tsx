@@ -47,11 +47,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const [customSessions, setCustomSessions] = useState("");
-  // Panchakarma program components
-  const panchakarmaProgram = specialtyPrograms.find((p) => p.id === "panchakarma");
-  const [panchaComps, setPanchaComps] = useState<ProgramComponent[]>(
-    () => panchakarmaProgram?.components?.map((c) => ({ ...c })) || []
-  );
+  // Panchakarma reference only (builder moved to AssignPackageDialog)
   const addVisit = useVisitsStore((s) => s.addVisit);
 
   const filteredClients = clients.filter(
