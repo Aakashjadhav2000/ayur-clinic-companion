@@ -182,10 +182,14 @@ export function getActivePackages(client: Client): ClientPackage[] {
 const visitTypes = ["Consultation", "Phone Consultation", "Therapy", "Garbhasanskar", "Panchakarma"];
 const colorIds = [0, 0, 0, 1, 2, 3, 9, 10, 0, 0];
 
+// IDs of clients to exclude from random visit generation (for Reach Out testing)
+const inactiveClientIds = new Set(["rekha_joshi", "meena_trivedi", "pooja_desai", "nandini_rao", "shalini_mehta"]);
+
 function generateVisits(): Visit[] {
   const visits: Visit[] = [];
   let id = 0;
   const now = new Date();
+  const activeClients = clients.filter((c) => !inactiveClientIds.has(c.id));
 
   for (let dayOffset = -60; dayOffset <= 14; dayOffset++) {
     const date = new Date(now);
@@ -194,7 +198,7 @@ function generateVisits(): Visit[] {
 
     const numVisits = Math.floor(Math.random() * 5) + 2;
     for (let v = 0; v < numVisits; v++) {
-      const client = clients[Math.floor(Math.random() * clients.length)];
+      const client = activeClients[Math.floor(Math.random() * activeClients.length)];
       const hour = 9 + Math.floor(Math.random() * 9);
       const colorId = colorIds[Math.floor(Math.random() * colorIds.length)];
       const duration = colorId === 1 || colorId === 3 ? 15 : colorId === 2 ? 60 : 30;
