@@ -15,6 +15,37 @@ import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
 
+// Match visit type to a Panchakarma component
+function findMatchingComponent(pkg: ClientPackage, visitLabel: string, category: string): PackageComponent | null {
+  if (!pkg.components) return null;
+  
+  // Map visit sub-types to component type keywords
+  const labelLower = visitLabel.toLowerCase();
+  
+  for (const comp of pkg.components) {
+    const compLower = comp.type.toLowerCase();
+    if (comp.used >= comp.total) continue; // already exhausted
+    
+    // Direct match
+    if (compLower.includes(labelLower) || labelLower.includes(compLower)) return comp;
+    
+    // Consultation matching
+    if (category === "consultation" && compLower.includes("consultation")) return comp;
+    
+    // Therapy matching
+    if (labelLower === "abhyanga" && compLower.includes("abhyanga")) return comp;
+    if (labelLower === "shirodhara" && compLower.includes("shirodhara")) return comp;
+    if (labelLower === "nasya" && compLower.includes("nasya")) return comp;
+    if (labelLower === "eye treatment" && compLower.includes("eye")) return comp;
+  }
+  return null;
+}
+
+// Check if a Panchakarma package has a matching available component
+function hasMatchingComponent(pkg: ClientPackage, visitLabel: string, category: string): boolean {
+  return findMatchingComponent(pkg, visitLabel, category) !== null;
+}
+
 interface BookingDialogProps {
   defaultDate?: string;
   trigger?: React.ReactNode;
