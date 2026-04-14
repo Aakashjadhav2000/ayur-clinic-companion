@@ -161,6 +161,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     toast.success(`Appointment booked for ${client.firstName} ${client.lastName}`);
     setOpen(false);
     resetForm();
+    onBooked?.();
   };
 
   const resetForm = () => {
