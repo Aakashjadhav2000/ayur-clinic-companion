@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus } from "lucide-react";
+import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { clients, consultationPackages, massagePackages, specialtyPackages, specialtyPrograms, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType, type ProgramComponent } from "@/data/mockData";
