@@ -78,10 +78,6 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setSelectedPkgId("");
     setSelectedNewPkg("");
     setShowCustomPackage(false);
-    // Reset panchakarma components when switching to Panchakarma
-    if (VISIT_TYPES[Number(idx)].colorId === 10 && panchakarmaProgram?.components) {
-      setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
-    }
   };
 
   const handleSubmit = () => {
@@ -134,12 +130,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
       client.packages.push(newPkg);
     }
 
-    // Build notes with Panchakarma details if applicable
     let finalNotes = notes;
-    if (isPanchakarma && panchaComps.length > 0) {
-      const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type} (${c.duration}min)`).join(", ");
-      finalNotes = `Panchakarma Program: ${compSummary}${notes ? " | " + notes : ""}`;
-    }
 
     addVisit({
       clientId: client.id,
@@ -176,7 +167,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setCustomName("");
     setCustomPrice("");
     setCustomSessions("");
-    if (panchakarmaProgram?.components) setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
+    
   };
 
   return (
