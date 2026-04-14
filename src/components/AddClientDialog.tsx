@@ -43,6 +43,7 @@ export default function AddClientDialog({ trigger, onClientAdded }: AddClientDia
       lastName: trimLast,
       phone: phone.trim(),
       totalVisits: 0,
+      packages: [],
       lastVisit: new Date().toISOString().split("T")[0],
     };
 
