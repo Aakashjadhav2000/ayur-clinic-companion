@@ -33,6 +33,28 @@ export interface Package {
   complimentary: boolean;
 }
 
+export const MASSAGE_TYPES = ["Abhyanga", "Shirodhara", "Nasya", "Eye Treatment"] as const;
+export type MassageType = typeof MASSAGE_TYPES[number];
+
+export const consultationPackages: Package[] = [
+  { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false },
+  { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false },
+  { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true },
+];
+
+export const massagePackages: Package[] = [
+  { category: "Massage", name: "Single Session", size: 1, price: 175, perSession: 175, complimentary: false },
+  { category: "Massage", name: "Pack of 4 Sessions", size: 4, price: 660, perSession: 165, complimentary: false },
+  { category: "Massage", name: "Pack of 6 Sessions", size: 6, price: 960, perSession: 160, complimentary: false },
+];
+
+export const specialtyPackages: Package[] = [
+  { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false },
+  { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false },
+];
+
+export const packages: Package[] = [...consultationPackages, ...massagePackages, ...specialtyPackages];
+
 export const COLOR_MAP: Record<number, { label: string; color: string; bg: string }> = {
   0: { label: "Consultation", color: "text-blue-700", bg: "bg-blue-100" },
   1: { label: "Phone/Panchakarma", color: "text-lavender-foreground", bg: "bg-lavender" },
@@ -42,14 +64,6 @@ export const COLOR_MAP: Record<number, { label: string; color: string; bg: strin
   10: { label: "Panchakarma", color: "text-orange-800", bg: "bg-orange-100" },
   11: { label: "Cancelled", color: "text-destructive", bg: "bg-red-50" },
 };
-
-export const packages: Package[] = [
-  { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false },
-  { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false },
-  { category: "Consultation", name: "Pack of 5 Visits", size: 5, price: 550, perSession: 110, complimentary: true },
-  { category: "Specialty", name: "Garbhasanskar", size: 0, price: 1400, perSession: 0, complimentary: false },
-  { category: "Specialty", name: "Panchakarma", size: 0, price: 2500, perSession: 0, complimentary: false },
-];
 
 export const clients: Client[] = [
   { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 4, lastVisit: "2024-12-15" },
