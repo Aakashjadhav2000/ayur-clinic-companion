@@ -17,6 +17,9 @@ import AddClientDialog from "@/components/AddClientDialog";
 
 interface BookingDialogProps {
   defaultDate?: string;
+  trigger?: React.ReactNode;
+  preselectedClientId?: string;
+  onBooked?: () => void;
 }
 
 const VISIT_TYPES = [
@@ -27,9 +30,9 @@ const VISIT_TYPES = [
   { colorId: 10, label: "Panchakarma", defaultDuration: 60, section: "specialty" },
 ];
 
-export default function BookingDialog({ defaultDate }: BookingDialogProps) {
+export default function BookingDialog({ defaultDate, trigger, preselectedClientId, onBooked }: BookingDialogProps) {
   const [open, setOpen] = useState(false);
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(preselectedClientId || "");
   const [date, setDate] = useState<Date | undefined>(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
   const [startTime, setStartTime] = useState("09:00");
   const [visitTypeIdx, setVisitTypeIdx] = useState("0");
@@ -158,6 +161,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
     toast.success(`Appointment booked for ${client.firstName} ${client.lastName}`);
     setOpen(false);
     resetForm();
+    onBooked?.();
   };
 
   const resetForm = () => {
@@ -182,10 +186,12 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Book Appointment
-        </Button>
+        {trigger || (
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            Book Appointment
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
