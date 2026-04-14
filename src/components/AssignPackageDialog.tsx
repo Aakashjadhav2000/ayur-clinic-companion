@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Package, Layers, PlusCircle, AlertTriangle } from "lucide-react";
-import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, specialtyPrograms, type ClientPackage, type ProgramComponent } from "@/data/mockData";
+import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, specialtyPrograms, type ClientPackage, type ProgramComponent, type PackageComponent } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -100,12 +100,22 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
       if (isPanchakarma) {
         const totalSessions = panchaComps.reduce((s, c) => s + c.sessions, 0);
         const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type}`).join(", ");
+        // Build tracked components
+        const trackedComponents: PackageComponent[] = panchaComps
+          .filter((c) => c.sessions > 0)
+          .map((c) => ({
+            type: c.type,
+            total: c.sessions,
+            used: 0,
+            duration: c.duration,
+          }));
         newPkg = {
           id: `pkg_${pkgIdCounter++}`,
           name: `Panchakarma (${compSummary})`,
           size: totalSessions,
           visitsUsed: 0,
           price: panchakarmaProgram?.price || 2500,
+          components: trackedComponents,
         };
         toast.success(`Panchakarma program (${totalSessions} sessions) added to ${client.firstName}`);
       } else {

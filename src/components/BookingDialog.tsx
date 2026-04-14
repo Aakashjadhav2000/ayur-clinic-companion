@@ -10,10 +10,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, AlertTriangle, CheckCircle, UserPlus, Layers, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, MASSAGE_TYPES, getActivePackages, type ClientPackage, type MassageType } from "@/data/mockData";
+import { clients, MASSAGE_TYPES, getActivePackages, type ClientPackage, type MassageType, type PackageComponent } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
+
+// Match visit type to a Panchakarma component
+function findMatchingComponent(pkg: ClientPackage, visitLabel: string, category: string): PackageComponent | null {
+  if (!pkg.components) return null;
+  
+  // Map visit sub-types to component type keywords
+  const labelLower = visitLabel.toLowerCase();
+  
+  for (const comp of pkg.components) {
+    const compLower = comp.type.toLowerCase();
+    if (comp.used >= comp.total) continue; // already exhausted
+    
+    // Direct match
+    if (compLower.includes(labelLower) || labelLower.includes(compLower)) return comp;
+    
+    // Consultation matching
+    if (category === "consultation" && compLower.includes("consultation")) return comp;
+    
+    // Therapy matching
+    if (labelLower === "abhyanga" && compLower.includes("abhyanga")) return comp;
+    if (labelLower === "shirodhara" && compLower.includes("shirodhara")) return comp;
+    if (labelLower === "nasya" && compLower.includes("nasya")) return comp;
+    if (labelLower === "eye treatment" && compLower.includes("eye")) return comp;
+  }
+  return null;
+}
+
+// Check if a Panchakarma package has a matching available component
+function hasMatchingComponent(pkg: ClientPackage, visitLabel: string, category: string): boolean {
+  return findMatchingComponent(pkg, visitLabel, category) !== null;
+}
 
 interface BookingDialogProps {
   defaultDate?: string;
@@ -143,8 +174,21 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     if (selectedPkgId && selectedPkgId !== "ntp") {
       const pkg = client.packages.find((p) => p.id === selectedPkgId);
       if (pkg) {
-        pkg.visitsUsed += 1;
-        pkgName = pkg.name;
+        // If Panchakarma with components, deduct from the matching component
+        if (pkg.components && pkg.components.length > 0) {
+          const matchingComp = findMatchingComponent(pkg, currentType.label, visitCategory);
+          if (matchingComp) {
+            matchingComp.used += 1;
+            pkg.visitsUsed += 1;
+            pkgName = `${pkg.name} [${matchingComp.type}]`;
+          } else {
+            toast.error(`No matching ${currentType.label} component in this Panchakarma package`);
+            return;
+          }
+        } else {
+          pkg.visitsUsed += 1;
+          pkgName = pkg.name;
+        }
       }
     } else if (isNTP) {
       pkgName = "NTP";
@@ -313,23 +357,52 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
             <div className="space-y-2">
               <Label>Package</Label>
               <div className="grid gap-2">
-                {/* Existing active packages */}
+              {/* Existing active packages */}
                 {activeClientPkgs.map((pkg) => {
-                  const left = Math.max(0, pkg.size - pkg.visitsUsed);
+                  const isPancha = !!(pkg.components && pkg.components.length > 0);
+                  const left = isPancha
+                    ? pkg.components!.reduce((s, c) => s + (c.total - c.used), 0)
+                    : Math.max(0, pkg.size - pkg.visitsUsed);
+                  const canUse = isPancha
+                    ? hasMatchingComponent(pkg, currentType.label, visitCategory)
+                    : left > 0;
+
                   return (
-                    <button key={pkg.id} onClick={() => setSelectedPkgId(pkg.id)}
+                    <button key={pkg.id}
+                      onClick={() => canUse ? setSelectedPkgId(pkg.id) : toast.error(`No matching ${currentType.label} sessions left in this package`)}
                       className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
+                        "flex flex-col p-3 rounded-lg border text-left transition-all",
+                        !canUse && "opacity-50 cursor-not-allowed",
                         selectedPkgId === pkg.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:bg-muted"
                       )}>
-                      <div>
-                        <p className="text-sm font-medium">{pkg.name}</p>
-                        <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <p className="text-sm font-medium">{pkg.name}</p>
+                          {!isPancha && (
+                            <p className="text-xs text-muted-foreground">{pkg.visitsUsed} used · {left} remaining</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!isPancha && <span className="text-xs font-bold text-primary">{left} left</span>}
+                          {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary">{left} left</span>
-                        {selectedPkgId === pkg.id && <CheckCircle className="w-4 h-4 text-primary" />}
-                      </div>
+                      {/* Panchakarma component breakdown */}
+                      {isPancha && (
+                        <div className="mt-2 space-y-1 w-full">
+                          {pkg.components!.map((comp, i) => {
+                            const compLeft = comp.total - comp.used;
+                            return (
+                              <div key={i} className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">{comp.type}</span>
+                                <span className={cn("font-medium", compLeft === 0 ? "text-destructive" : "text-primary")}>
+                                  {compLeft}/{comp.total} left
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
