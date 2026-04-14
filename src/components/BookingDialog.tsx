@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES, getActivePackages, type ClientPackage } from "@/data/mockData";
+import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
@@ -62,7 +62,7 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
   const activeClientPkgs = selectedClient ? getActivePackages(selectedClient) : [];
 
   const relevantPackages = isMassage
-    ? massagePackages
+    ? (massageType ? getMassagePackages(massageType as MassageType) : [])
     : isSpecialty
     ? specialtyPackages
     : consultationPackages;
