@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, AlertTriangle, CheckCircle, UserPlus, Layers, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, MASSAGE_TYPES, getActivePackages, type ClientPackage, type MassageType } from "@/data/mockData";
+import { clients, MASSAGE_TYPES, getActivePackages, type ClientPackage, type MassageType, type PackageComponent } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
@@ -143,8 +143,21 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     if (selectedPkgId && selectedPkgId !== "ntp") {
       const pkg = client.packages.find((p) => p.id === selectedPkgId);
       if (pkg) {
-        pkg.visitsUsed += 1;
-        pkgName = pkg.name;
+        // If Panchakarma with components, deduct from the matching component
+        if (pkg.components && pkg.components.length > 0) {
+          const matchingComp = findMatchingComponent(pkg, currentType.label, visitCategory);
+          if (matchingComp) {
+            matchingComp.used += 1;
+            pkg.visitsUsed += 1;
+            pkgName = `${pkg.name} [${matchingComp.type}]`;
+          } else {
+            toast.error(`No matching ${currentType.label} component in this Panchakarma package`);
+            return;
+          }
+        } else {
+          pkg.visitsUsed += 1;
+          pkgName = pkg.name;
+        }
       }
     } else if (isNTP) {
       pkgName = "NTP";
