@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Layers, PlusCircle } from "lucide-react";
+import { Package, Layers, PlusCircle, AlertTriangle } from "lucide-react";
 import { clients, consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES, massagePackagesByType, specialtyPrograms, type ClientPackage, type ProgramComponent } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 let pkgIdCounter = 500;
 
@@ -56,6 +58,15 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
     }
   };
 
+  const visits = useVisitsStore((s) => s.visits);
+  const updateVisit = useVisitsStore((s) => s.updateVisit);
+
+  // Check if client has NTP visits today
+  const today = format(new Date(), "yyyy-MM-dd");
+  const clientNtpVisitsToday = clientId
+    ? visits.filter((v) => v.clientId === clientId && v.date === today && v.packageType === "NTP")
+    : [];
+
   const handleAssign = () => {
     if (!clientId) {
       toast.error("Please select a client");
@@ -87,7 +98,6 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
       }
 
       if (isPanchakarma) {
-        // Build Panchakarma package with component details
         const totalSessions = panchaComps.reduce((s, c) => s + c.sessions, 0);
         const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type}`).join(", ");
         newPkg = {
@@ -111,6 +121,15 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
         };
         toast.success(`"${pkg.name}" added to ${client.firstName}`);
       }
+    }
+
+    // If client had NTP visits today, retroactively deduct 1 visit from the new package
+    if (clientNtpVisitsToday.length > 0) {
+      newPkg.visitsUsed = 1;
+      // Update the first NTP visit to reference the new package
+      const ntpVisit = clientNtpVisitsToday[0];
+      updateVisit(ntpVisit.id, { packageType: newPkg.name });
+      toast.info(`1 visit retroactively deducted for today's NTP visit`);
     }
 
     client.packages.push(newPkg);
@@ -185,6 +204,20 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* NTP retroactive notice */}
+          {selectedClient && clientNtpVisitsToday.length > 0 && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50/50 p-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">NTP Visit Today</p>
+                <p className="text-xs text-amber-700">
+                  {selectedClient.firstName} has {clientNtpVisitsToday.length} unpaid visit(s) today.
+                  Assigning a package will retroactively deduct 1 visit.
+                </p>
               </div>
             </div>
           )}
