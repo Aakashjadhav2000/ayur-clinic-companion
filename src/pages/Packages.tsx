@@ -1,4 +1,5 @@
-import { packages } from "@/data/mockData";
+import { consultationPackages, massagePackages, specialtyPackages, MASSAGE_TYPES } from "@/data/mockData";
+const packages = [...consultationPackages, ...massagePackages, ...specialtyPackages];
 import { Check, X } from "lucide-react";
 
 export default function Packages() {
