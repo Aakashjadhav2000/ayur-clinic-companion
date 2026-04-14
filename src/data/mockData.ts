@@ -44,6 +44,25 @@ export interface Package {
   duration?: number; // session duration in minutes
 }
 
+// Program types for specialty treatments
+export type ProgramMode = "unlimited" | "combo";
+
+export interface ProgramComponent {
+  type: string; // e.g. "Abhyanga", "Consultation"
+  sessions: number;
+  duration: number; // minutes
+}
+
+export interface SpecialtyProgram {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  mode: ProgramMode;
+  duration?: number; // per-session duration for unlimited programs
+  components?: ProgramComponent[]; // for combo programs
+}
+
 export const consultationPackages: Package[] = [
   { category: "Consultation", name: "Single Visit", size: 1, price: 165, perSession: 165, complimentary: false, duration: 30 },
   { category: "Consultation", name: "Pack of 3 Visits", size: 3, price: 350, perSession: 116.67, complimentary: false, duration: 30 },
