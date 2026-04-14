@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
-  role: "admin" | "employee" | null;
+  role: "admin" | "employee" | "frontdesk" | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<"admin" | "employee" | null>(null);
+  const [role, setRole] = useState<"admin" | "employee" | "frontdesk" | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchRole = async (userId: string) => {
@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("role")
       .eq("user_id", userId)
       .maybeSingle();
-    setRole((data?.role as "admin" | "employee") ?? "employee");
+    setRole((data?.role as "admin" | "employee" | "frontdesk") ?? "frontdesk");
   };
 
   useEffect(() => {

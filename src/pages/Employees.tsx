@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UserPlus, Trash2, Shield, User } from "lucide-react";
@@ -12,7 +13,7 @@ import { toast } from "sonner";
 interface EmployeeRow {
   user_id: string;
   display_name: string;
-  role: "admin" | "employee";
+  role: "admin" | "employee" | "frontdesk";
 }
 
 export default function Employees() {
@@ -23,6 +24,7 @@ export default function Employees() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [newRole, setNewRole] = useState<"admin" | "frontdesk">("frontdesk");
   const [creating, setCreating] = useState(false);
 
   const fetchEmployees = async () => {
@@ -30,7 +32,7 @@ export default function Employees() {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
 
     if (profiles) {
-      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role as "admin" | "employee"]) ?? []);
+      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role as "admin" | "employee" | "frontdesk"]) ?? []);
       setEmployees(
         profiles.map((p) => ({
           user_id: p.user_id,
@@ -59,7 +61,7 @@ export default function Employees() {
 
     // Use edge function to create employee (requires service role)
     const { data, error } = await supabase.functions.invoke("create-employee", {
-      body: { email, password, displayName },
+      body: { email, password, displayName, role: newRole },
     });
 
     if (error || data?.error) {
@@ -70,6 +72,7 @@ export default function Employees() {
       setEmail("");
       setDisplayName("");
       setPassword("");
+      setNewRole("frontdesk");
       await fetchEmployees();
     }
     setCreating(false);
@@ -129,6 +132,21 @@ export default function Employees() {
                 <Label>Password *</Label>
                 <Input type="password" placeholder="Min 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
+              <div className="space-y-2">
+                <Label>Role *</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "admin" | "frontdesk")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="frontdesk">Front Desk</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {newRole === "admin" ? "Full access — can manage employees and edit packages" : "Can view and use the system but cannot modify packages or manage employees"}
+                </p>
+              </div>
               <Button onClick={handleCreateEmployee} className="w-full" disabled={creating}>
                 {creating ? "Creating…" : "Create Employee"}
               </Button>
@@ -166,7 +184,7 @@ export default function Employees() {
                   </td>
                   <td className="p-4">
                     <Badge variant={emp.role === "admin" ? "default" : "secondary"}>
-                      {emp.role}
+                      {emp.role === "frontdesk" ? "Front Desk" : emp.role}
                     </Badge>
                   </td>
                   <td className="p-4 text-right">
