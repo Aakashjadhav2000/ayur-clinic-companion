@@ -32,7 +32,7 @@ export default function Employees() {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
 
     if (profiles) {
-      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role as "admin" | "employee"]) ?? []);
+      const roleMap = new Map(roles?.map((r) => [r.user_id, r.role as "admin" | "employee" | "frontdesk"]) ?? []);
       setEmployees(
         profiles.map((p) => ({
           user_id: p.user_id,
