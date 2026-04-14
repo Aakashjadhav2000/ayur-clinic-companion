@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, AlertTriangle, Package, CheckCircle, PlusCircle, UserPlus, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { clients, consultationPackages, massagePackages, specialtyPackages, specialtyPrograms, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType, type ProgramComponent } from "@/data/mockData";
+import { clients, consultationPackages, massagePackages, specialtyPackages, packages as allPackages, MASSAGE_TYPES, getActivePackages, getMassagePackages, type ClientPackage, type MassageType } from "@/data/mockData";
 import { useVisitsStore } from "@/stores/visitsStore";
 import { toast } from "sonner";
 import AddClientDialog from "@/components/AddClientDialog";
@@ -47,11 +47,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const [customSessions, setCustomSessions] = useState("");
-  // Panchakarma program components
-  const panchakarmaProgram = specialtyPrograms.find((p) => p.id === "panchakarma");
-  const [panchaComps, setPanchaComps] = useState<ProgramComponent[]>(
-    () => panchakarmaProgram?.components?.map((c) => ({ ...c })) || []
-  );
+  // Panchakarma reference only (builder moved to AssignPackageDialog)
   const addVisit = useVisitsStore((s) => s.addVisit);
 
   const filteredClients = clients.filter(
@@ -82,10 +78,6 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setSelectedPkgId("");
     setSelectedNewPkg("");
     setShowCustomPackage(false);
-    // Reset panchakarma components when switching to Panchakarma
-    if (VISIT_TYPES[Number(idx)].colorId === 10 && panchakarmaProgram?.components) {
-      setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
-    }
   };
 
   const handleSubmit = () => {
@@ -138,12 +130,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
       client.packages.push(newPkg);
     }
 
-    // Build notes with Panchakarma details if applicable
     let finalNotes = notes;
-    if (isPanchakarma && panchaComps.length > 0) {
-      const compSummary = panchaComps.map((c) => `${c.sessions}× ${c.type} (${c.duration}min)`).join(", ");
-      finalNotes = `Panchakarma Program: ${compSummary}${notes ? " | " + notes : ""}`;
-    }
 
     addVisit({
       clientId: client.id,
@@ -180,7 +167,7 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setCustomName("");
     setCustomPrice("");
     setCustomSessions("");
-    if (panchakarmaProgram?.components) setPanchaComps(panchakarmaProgram.components.map((c) => ({ ...c })));
+    
   };
 
   return (
@@ -307,52 +294,13 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
             </div>
           )}
 
-          {/* Panchakarma Program Builder */}
+          {/* Panchakarma note — session config moved to Assign Package */}
           {isPanchakarma && selectedClient && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-4 space-y-3">
-              <p className="text-sm font-semibold flex items-center gap-2 text-orange-800">
-                <Layers className="w-4 h-4" /> Panchakarma Program — Adjust Sessions
+            <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 flex items-center gap-3">
+              <Layers className="w-4 h-4 text-orange-700" />
+              <p className="text-xs text-orange-800">
+                Panchakarma session details are configured when assigning the package.
               </p>
-              <p className="text-xs text-muted-foreground">Customize the therapy and consultation sessions for this client's program</p>
-              <div className="space-y-2">
-                {panchaComps.map((comp, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 rounded bg-background border border-border">
-                    <span className="text-sm font-medium flex-1">{comp.type}</span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline" size="icon" className="h-7 w-7"
-                        onClick={() => {
-                          if (comp.sessions > 0) {
-                            const updated = [...panchaComps];
-                            updated[idx] = { ...comp, sessions: comp.sessions - 1 };
-                            setPanchaComps(updated);
-                          }
-                        }}
-                      >−</Button>
-                      <span className="text-sm font-bold w-6 text-center">{comp.sessions}</span>
-                      <Button
-                        variant="outline" size="icon" className="h-7 w-7"
-                        onClick={() => {
-                          const updated = [...panchaComps];
-                          updated[idx] = { ...comp, sessions: comp.sessions + 1 };
-                          setPanchaComps(updated);
-                        }}
-                      >+</Button>
-                    </div>
-                    <span className="text-xs text-muted-foreground w-12 text-right">{comp.duration}min</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <Button variant="ghost" size="sm" className="text-xs gap-1 h-7" onClick={() => {
-                  setPanchaComps((prev) => [...prev, { type: "Consultation", sessions: 1, duration: 30 }]);
-                }}>
-                  <PlusCircle className="w-3 h-3" /> Add Component
-                </Button>
-                <p className="text-xs font-medium text-orange-700">
-                  Total: {panchaComps.reduce((s, c) => s + c.sessions, 0)} sessions
-                </p>
-              </div>
             </div>
           )}
 
