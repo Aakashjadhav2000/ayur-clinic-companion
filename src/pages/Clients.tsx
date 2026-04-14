@@ -1,16 +1,149 @@
 import { useState } from "react";
-import { Search, Phone, Calendar, Package, History, Clock } from "lucide-react";
+import { Search, Phone, Calendar, Package, History, Clock, X, ExternalLink } from "lucide-react";
 import { clients, getClientVisits } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import VisitBadge from "@/components/VisitBadge";
 import AddClientDialog from "@/components/AddClientDialog";
+
+function ClientDetail({ selected, pastVisits, futureVisits, visitsLeft, packageProgress, compact = false }: {
+  selected: typeof clients[0];
+  pastVisits: ReturnType<typeof getClientVisits>;
+  futureVisits: ReturnType<typeof getClientVisits>;
+  visitsLeft: number | null;
+  packageProgress: number;
+  compact?: boolean;
+}) {
+  const pastLimit = compact ? 5 : 20;
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className={`${compact ? "w-10 h-10 text-base" : "w-14 h-14 text-xl"} rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary`}>
+          {selected.firstName[0]}{selected.lastName[0]}
+        </div>
+        <div>
+          <h3 className={`font-display font-semibold ${compact ? "" : "text-lg"}`}>{selected.firstName} {selected.lastName}</h3>
+          {selected.phone && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Phone className="w-3 h-3" /> {selected.phone}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className={`grid ${compact ? "grid-cols-2" : "grid-cols-3"} gap-3`}>
+        <div className="p-3 bg-muted/50 rounded-md">
+          <p className="text-xs text-muted-foreground">Total Visits</p>
+          <p className="text-lg font-bold">{selected.totalVisits}</p>
+        </div>
+        <div className="p-3 bg-muted/50 rounded-md">
+          <p className="text-xs text-muted-foreground">Upcoming</p>
+          <p className="text-lg font-bold">{futureVisits.length}</p>
+        </div>
+        {!compact && (
+          <div className="p-3 bg-muted/50 rounded-md">
+            <p className="text-xs text-muted-foreground">Last Visit</p>
+            <p className="text-sm font-bold">{selected.lastVisit}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Active Package */}
+      <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Active Package</span>
+          </div>
+          {selected.activePackage && (
+            <Badge variant="secondary">{selected.activePackage}</Badge>
+          )}
+        </div>
+        {selected.activePackage && selected.packageSize ? (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{selected.visitsUsed || 0} used</span>
+              <span>{visitsLeft} remaining</span>
+            </div>
+            <Progress value={packageProgress} className="h-2" />
+            {visitsLeft === 0 && (
+              <p className="text-xs text-destructive font-medium mt-1">
+                Package completed — time to renew
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No active package</p>
+        )}
+      </div>
+
+      {/* Visits Tabs */}
+      <Tabs defaultValue="past">
+        <TabsList className="w-full">
+          <TabsTrigger value="upcoming" className="flex-1 gap-1 text-xs">
+            <Clock className="w-3 h-3" /> Upcoming ({futureVisits.length})
+          </TabsTrigger>
+          <TabsTrigger value="past" className="flex-1 gap-1 text-xs">
+            <History className="w-3 h-3" /> Past ({pastVisits.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upcoming">
+          <div className="space-y-2">
+            {futureVisits.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No upcoming appointments</p>
+            ) : (
+              futureVisits.map((v) => (
+                <div key={v.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3 text-muted-foreground" />
+                    <span>{v.date}</span>
+                    <span className="text-xs text-muted-foreground">{v.startTime}</span>
+                  </div>
+                  <VisitBadge colorId={v.colorId} />
+                </div>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="past">
+          <div className="space-y-2">
+            {pastVisits.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No past visits</p>
+            ) : (
+              pastVisits.slice(0, pastLimit).map((v) => (
+                <div key={v.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3 text-muted-foreground" />
+                    <span>{v.date}</span>
+                    <span className="text-xs text-muted-foreground">{v.startTime}</span>
+                  </div>
+                  <VisitBadge colorId={v.colorId} />
+                </div>
+              ))
+            )}
+            {pastVisits.length > pastLimit && (
+              <p className="text-xs text-muted-foreground text-center">+ {pastVisits.length - pastLimit} more visits</p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
 export default function Clients() {
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [fullViewClient, setFullViewClient] = useState<string | null>(null);
   const [, forceUpdate] = useState(0);
 
   const filtered = clients.filter(
@@ -21,17 +154,21 @@ export default function Clients() {
   );
 
   const today = new Date().toISOString().split("T")[0];
-  const allVisits = selectedClient ? getClientVisits(selectedClient) : [];
-  const pastVisits = allVisits.filter((v) => v.date <= today).sort((a, b) => b.date.localeCompare(a.date));
-  const futureVisits = allVisits.filter((v) => v.date > today).sort((a, b) => a.date.localeCompare(b.date));
-  const selected = clients.find((c) => c.id === selectedClient);
 
-  const visitsLeft = selected?.packageSize && selected?.visitsUsed !== undefined
-    ? Math.max(0, selected.packageSize - selected.visitsUsed)
-    : null;
-  const packageProgress = selected?.packageSize
-    ? Math.round(((selected.visitsUsed || 0) / selected.packageSize) * 100)
-    : 0;
+  function getVisitData(clientId: string) {
+    const allVisits = getClientVisits(clientId);
+    const pastVisits = allVisits.filter((v) => v.date <= today).sort((a, b) => b.date.localeCompare(a.date));
+    const futureVisits = allVisits.filter((v) => v.date > today).sort((a, b) => a.date.localeCompare(b.date));
+    const client = clients.find((c) => c.id === clientId)!;
+    const visitsLeft = client.packageSize && client.visitsUsed !== undefined
+      ? Math.max(0, client.packageSize - client.visitsUsed) : null;
+    const packageProgress = client.packageSize
+      ? Math.round(((client.visitsUsed || 0) / client.packageSize) * 100) : 0;
+    return { pastVisits, futureVisits, visitsLeft, packageProgress, client };
+  }
+
+  const sidebarData = selectedClient ? getVisitData(selectedClient) : null;
+  const fullViewData = fullViewClient ? getVisitData(fullViewClient) : null;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -68,12 +205,12 @@ export default function Clients() {
             <tbody>
               {filtered.map((client) => {
                 const left = client.packageSize && client.visitsUsed !== undefined
-                  ? Math.max(0, client.packageSize - client.visitsUsed)
-                  : null;
+                  ? Math.max(0, client.packageSize - client.visitsUsed) : null;
                 return (
                   <tr
                     key={client.id}
                     onClick={() => setSelectedClient(client.id)}
+                    onDoubleClick={() => setFullViewClient(client.id)}
                     className={`border-b border-border cursor-pointer transition-colors hover:bg-muted/30 ${
                       selectedClient === client.id ? "bg-primary/5" : ""
                     }`}
@@ -108,123 +245,52 @@ export default function Clients() {
           </table>
         </div>
 
+        {/* Sidebar compact view */}
         <div className="bg-card rounded-lg border border-border p-6 max-h-[80vh] overflow-y-auto">
-          {selected ? (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
-                  {selected.firstName[0]}{selected.lastName[0]}
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold">{selected.firstName} {selected.lastName}</h3>
-                  {selected.phone && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> {selected.phone}
-                    </p>
-                  )}
-                </div>
+          {sidebarData ? (
+            <div>
+              <div className="flex justify-end mb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => setFullViewClient(selectedClient)}
+                >
+                  <ExternalLink className="w-3 h-3" /> Full View
+                </Button>
               </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-muted/50 rounded-md">
-                  <p className="text-xs text-muted-foreground">Total Visits</p>
-                  <p className="text-lg font-bold">{selected.totalVisits}</p>
-                </div>
-                <div className="p-3 bg-muted/50 rounded-md">
-                  <p className="text-xs text-muted-foreground">Upcoming</p>
-                  <p className="text-lg font-bold">{futureVisits.length}</p>
-                </div>
-              </div>
-
-              {/* Active Package */}
-              <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">Active Package</span>
-                  </div>
-                  {selected.activePackage && (
-                    <Badge variant="secondary">{selected.activePackage}</Badge>
-                  )}
-                </div>
-                {selected.activePackage && selected.packageSize ? (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{selected.visitsUsed || 0} used</span>
-                      <span>{visitsLeft} remaining</span>
-                    </div>
-                    <Progress value={packageProgress} className="h-2" />
-                    {visitsLeft === 0 && (
-                      <p className="text-xs text-destructive font-medium mt-1">
-                        Package completed — time to renew
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No active package</p>
-                )}
-              </div>
-
-              {/* Visits Tabs */}
-              <Tabs defaultValue="past">
-                <TabsList className="w-full">
-                  <TabsTrigger value="upcoming" className="flex-1 gap-1 text-xs">
-                    <Clock className="w-3 h-3" /> Upcoming ({futureVisits.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="past" className="flex-1 gap-1 text-xs">
-                    <History className="w-3 h-3" /> Past ({pastVisits.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="upcoming">
-                  <div className="space-y-2">
-                    {futureVisits.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">No upcoming appointments</p>
-                    ) : (
-                      futureVisits.map((v) => (
-                        <div key={v.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            <span>{v.date}</span>
-                            <span className="text-xs text-muted-foreground">{v.startTime}</span>
-                          </div>
-                          <VisitBadge colorId={v.colorId} />
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="past">
-                  <div className="space-y-2">
-                    {pastVisits.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">No past visits</p>
-                    ) : (
-                      pastVisits.slice(0, 15).map((v) => (
-                        <div key={v.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            <span>{v.date}</span>
-                            <span className="text-xs text-muted-foreground">{v.startTime}</span>
-                          </div>
-                          <VisitBadge colorId={v.colorId} />
-                        </div>
-                      ))
-                    )}
-                    {pastVisits.length > 15 && (
-                      <p className="text-xs text-muted-foreground text-center">+ {pastVisits.length - 15} more visits</p>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <ClientDetail
+                selected={sidebarData.client}
+                pastVisits={sidebarData.pastVisits}
+                futureVisits={sidebarData.futureVisits}
+                visitsLeft={sidebarData.visitsLeft}
+                packageProgress={sidebarData.packageProgress}
+                compact
+              />
             </div>
           ) : (
             <p className="text-muted-foreground text-sm text-center py-12">Select a client to view details</p>
           )}
         </div>
       </div>
+
+      {/* Full view dialog */}
+      <Dialog open={!!fullViewClient} onOpenChange={(open) => !open && setFullViewClient(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Client Profile</DialogTitle>
+          </DialogHeader>
+          {fullViewData && (
+            <ClientDetail
+              selected={fullViewData.client}
+              pastVisits={fullViewData.pastVisits}
+              futureVisits={fullViewData.futureVisits}
+              visitsLeft={fullViewData.visitsLeft}
+              packageProgress={fullViewData.packageProgress}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
