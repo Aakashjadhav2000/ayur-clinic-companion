@@ -209,6 +209,14 @@ export default function BookingDialog({ defaultDate }: BookingDialogProps) {
                     )}
                   </div>
                 )}
+                <AddClientDialog
+                  trigger={
+                    <Button variant="outline" size="sm" className="w-full gap-2 mt-1">
+                      <UserPlus className="w-4 h-4" /> New Client
+                    </Button>
+                  }
+                  onClientAdded={(c) => { setClientId(c.id); setClientSearch(""); }}
+                />
               </div>
             )}
           </div>
