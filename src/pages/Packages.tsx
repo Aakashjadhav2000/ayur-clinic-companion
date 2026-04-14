@@ -251,11 +251,6 @@ export default function Packages() {
                         </Button>
                       </div>
                     </div>
-                        section="massage-type"
-                        massageTypeName={mt}
-                        onAdd={(pkg) => handleAddMassageTypePkg(mt, pkg)}
-                      />
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {pkgs.map((pkg, idx) => {
                         const isEditing = editingMassage?.type === mt && editingMassage?.index === idx;
