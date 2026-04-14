@@ -18,12 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    setRole((data?.role as "admin" | "employee" | "frontdesk") ?? "frontdesk");
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      setRole((data?.role as "admin" | "employee" | "frontdesk") ?? "frontdesk");
+    } catch {
+      setRole("frontdesk");
+    }
   };
 
   useEffect(() => {
