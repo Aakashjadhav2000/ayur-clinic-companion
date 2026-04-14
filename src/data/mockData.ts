@@ -12,6 +12,9 @@ export interface ClientPackage {
   visitsUsed: number;
   price?: number;
   components?: PackageComponent[]; // For Panchakarma-style multi-component packages
+  complimentaryTotal?: number; // e.g. 1 for Pack of 5
+  complimentaryUsed?: number;
+  ownerClientId?: string; // The client who owns this package (for complimentary tracking)
 }
 
 export interface Client {
@@ -159,18 +162,23 @@ export const COLOR_MAP: Record<number, { label: string; color: string; bg: strin
 };
 
 let pkgIdCounter = 100;
-function makePkg(name: string, size: number, used: number, price?: number): ClientPackage {
-  return { id: `pkg_${pkgIdCounter++}`, name, size, visitsUsed: used, price };
+function makePkg(name: string, size: number, used: number, price?: number, ownerId?: string): ClientPackage {
+  const isComplimentary = name.includes("Pack of 5");
+  return {
+    id: `pkg_${pkgIdCounter++}`,
+    name, size, visitsUsed: used, price,
+    ...(isComplimentary ? { complimentaryTotal: 1, complimentaryUsed: 0, ownerClientId: ownerId } : {}),
+  };
 }
 
 export const clients: Client[] = [
-  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", email: "betty@example.com", totalVisits: 24, packages: [makePkg("Pack of 5 Visits", 5, 4, 550), makePkg("Single Session", 1, 0, 175)], lastVisit: "2024-12-15" },
+  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", email: "betty@example.com", totalVisits: 24, packages: [makePkg("Pack of 5 Visits", 5, 4, 550, "betty_simancas"), makePkg("Single Session", 1, 0, 175)], lastVisit: "2024-12-15" },
   { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", email: "", totalVisits: 18, packages: [makePkg("Garbhasanskar", 1, 0, 1400)], lastVisit: "2024-12-20" },
   { id: "harsharan_dogra", firstName: "Harsharan", lastName: "Dogra", phone: "", email: "", totalVisits: 12, packages: [], lastVisit: "2024-11-30" },
   { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", email: "priya.sharma@email.com", totalVisits: 35, packages: [makePkg("Pack of 3 Visits", 3, 3, 350), makePkg("Pack of 4 Sessions", 4, 1, 660)], lastVisit: "2025-01-05" },
   { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", email: "anita.p@email.com", totalVisits: 8, packages: [makePkg("Panchakarma", 1, 0, 2500)], lastVisit: "2025-01-10" },
   { id: "maya_krishnan", firstName: "Maya", lastName: "Krishnan", phone: "510-555-0167", email: "", totalVisits: 42, packages: [], lastVisit: "2025-01-08" },
-  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", email: "deepa.nair@email.com", totalVisits: 15, packages: [makePkg("Pack of 5 Visits", 5, 2, 550)], lastVisit: "2025-01-12" },
+  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", email: "deepa.nair@email.com", totalVisits: 15, packages: [makePkg("Pack of 5 Visits", 5, 2, 550, "deepa_nair")], lastVisit: "2025-01-12" },
   { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", email: "", totalVisits: 27, packages: [], lastVisit: "2024-12-28" },
   { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", email: "kavita.r@email.com", totalVisits: 6, packages: [makePkg("Single Visit", 1, 1, 165)], lastVisit: "2025-01-14" },
   { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", email: "sunita.g@email.com", totalVisits: 19, packages: [makePkg("Garbhasanskar", 1, 1, 1400), makePkg("Pack of 6 Sessions", 6, 3, 960)], lastVisit: "2025-01-13" },

@@ -128,8 +128,11 @@ export default function AssignPackageDialog({ trigger, preselectedClientId, onAs
           size: pkg.size || 1,
           visitsUsed: 0,
           price: pkg.price,
+          // Pack of 5 gets 1 complimentary visit (can be used by anyone)
+          ...(pkg.complimentary ? { complimentaryTotal: 1, complimentaryUsed: 0, ownerClientId: client.id } : {}),
         };
-        toast.success(`"${pkg.name}" added to ${client.firstName}`);
+        const compMsg = pkg.complimentary ? " (includes 1 complimentary visit)" : "";
+        toast.success(`"${pkg.name}" added to ${client.firstName}${compMsg}`);
       }
     }
 
