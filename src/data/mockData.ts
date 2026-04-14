@@ -1,13 +1,23 @@
+export interface ClientPackage {
+  id: string;
+  name: string;
+  size: number;
+  visitsUsed: number;
+  price?: number;
+}
+
 export interface Client {
   id: string;
   firstName: string;
   lastName: string;
   phone: string;
   totalVisits: number;
+  packages: ClientPackage[];
+  lastVisit: string;
+  // Legacy compat helpers
   activePackage?: string;
   packageSize?: number;
   visitsUsed?: number;
-  lastVisit: string;
 }
 
 export interface Visit {
@@ -65,18 +75,28 @@ export const COLOR_MAP: Record<number, { label: string; color: string; bg: strin
   11: { label: "Cancelled", color: "text-destructive", bg: "bg-red-50" },
 };
 
+let pkgIdCounter = 100;
+function makePkg(name: string, size: number, used: number, price?: number): ClientPackage {
+  return { id: `pkg_${pkgIdCounter++}`, name, size, visitsUsed: used, price };
+}
+
 export const clients: Client[] = [
-  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 4, lastVisit: "2024-12-15" },
-  { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", totalVisits: 18, activePackage: "Garbhasanskar", packageSize: 1, visitsUsed: 0, lastVisit: "2024-12-20" },
-  { id: "harsharan_dogra", firstName: "Harsharan", lastName: "Dogra", phone: "", totalVisits: 12, lastVisit: "2024-11-30" },
-  { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", totalVisits: 35, activePackage: "Pack of 3", packageSize: 3, visitsUsed: 3, lastVisit: "2025-01-05" },
-  { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", totalVisits: 8, activePackage: "Panchakarma", packageSize: 1, visitsUsed: 0, lastVisit: "2025-01-10" },
-  { id: "maya_krishnan", firstName: "Maya", lastName: "Krishnan", phone: "510-555-0167", totalVisits: 42, lastVisit: "2025-01-08" },
-  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", totalVisits: 15, activePackage: "Pack of 5", packageSize: 5, visitsUsed: 2, lastVisit: "2025-01-12" },
-  { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", totalVisits: 27, lastVisit: "2024-12-28" },
-  { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", totalVisits: 6, activePackage: "Single Visit", packageSize: 1, visitsUsed: 1, lastVisit: "2025-01-14" },
-  { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", totalVisits: 19, activePackage: "Garbhasanskar", packageSize: 1, visitsUsed: 1, lastVisit: "2025-01-13" },
+  { id: "betty_simancas", firstName: "Betty", lastName: "Simancas", phone: "703-475-3000", totalVisits: 24, packages: [makePkg("Pack of 5 Visits", 5, 4, 550), makePkg("Single Session", 1, 0, 175)], lastVisit: "2024-12-15" },
+  { id: "sreyashi_roy", firstName: "Sreyashi", lastName: "Roy", phone: "734-255-6000", totalVisits: 18, packages: [makePkg("Garbhasanskar", 1, 0, 1400)], lastVisit: "2024-12-20" },
+  { id: "harsharan_dogra", firstName: "Harsharan", lastName: "Dogra", phone: "", totalVisits: 12, packages: [], lastVisit: "2024-11-30" },
+  { id: "priya_sharma", firstName: "Priya", lastName: "Sharma", phone: "201-555-0142", totalVisits: 35, packages: [makePkg("Pack of 3 Visits", 3, 3, 350), makePkg("Pack of 4 Sessions", 4, 1, 660)], lastVisit: "2025-01-05" },
+  { id: "anita_patel", firstName: "Anita", lastName: "Patel", phone: "646-555-0198", totalVisits: 8, packages: [makePkg("Panchakarma", 1, 0, 2500)], lastVisit: "2025-01-10" },
+  { id: "maya_krishnan", firstName: "Maya", lastName: "Krishnan", phone: "510-555-0167", totalVisits: 42, packages: [], lastVisit: "2025-01-08" },
+  { id: "deepa_nair", firstName: "Deepa", lastName: "Nair", phone: "408-555-0123", totalVisits: 15, packages: [makePkg("Pack of 5 Visits", 5, 2, 550)], lastVisit: "2025-01-12" },
+  { id: "lakshmi_iyer", firstName: "Lakshmi", lastName: "Iyer", phone: "732-555-0145", totalVisits: 27, packages: [], lastVisit: "2024-12-28" },
+  { id: "kavita_reddy", firstName: "Kavita", lastName: "Reddy", phone: "347-555-0189", totalVisits: 6, packages: [makePkg("Single Visit", 1, 1, 165)], lastVisit: "2025-01-14" },
+  { id: "sunita_gupta", firstName: "Sunita", lastName: "Gupta", phone: "917-555-0156", totalVisits: 19, packages: [makePkg("Garbhasanskar", 1, 1, 1400), makePkg("Pack of 6 Sessions", 6, 3, 960)], lastVisit: "2025-01-13" },
 ];
+
+// Helper: get active (non-exhausted) packages
+export function getActivePackages(client: Client): ClientPackage[] {
+  return client.packages.filter((p) => p.visitsUsed < p.size);
+}
 
 const visitTypes = ["Consultation", "Phone Consultation", "Therapy", "Garbhasanskar", "Panchakarma"];
 const colorIds = [0, 0, 0, 1, 2, 3, 9, 10, 0, 0];
@@ -89,7 +109,7 @@ function generateVisits(): Visit[] {
   for (let dayOffset = -60; dayOffset <= 14; dayOffset++) {
     const date = new Date(now);
     date.setDate(date.getDate() + dayOffset);
-    if (date.getDay() === 0) continue; // skip sundays
+    if (date.getDay() === 0) continue;
 
     const numVisits = Math.floor(Math.random() * 5) + 2;
     for (let v = 0; v < numVisits; v++) {
@@ -132,7 +152,7 @@ export function getTodayStats() {
   return {
     totalClients: clients.length,
     todayAppointments: todayVisits.length,
-    activePackages: clients.filter((c) => c.activePackage).length,
+    activePackages: clients.filter((c) => getActivePackages(c).length > 0).length,
     totalVisits: visits.length,
   };
 }

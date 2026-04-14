@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Search, Phone, Calendar, Package, History, Clock, X, ExternalLink } from "lucide-react";
-import { clients, getClientVisits } from "@/data/mockData";
+import { Search, Phone, Calendar, Package, History, Clock, ExternalLink } from "lucide-react";
+import { clients, getClientVisits, getActivePackages } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,16 @@ import VisitBadge from "@/components/VisitBadge";
 import AddClientDialog from "@/components/AddClientDialog";
 import AssignPackageDialog from "@/components/AssignPackageDialog";
 
-function ClientDetail({ selected, pastVisits, futureVisits, visitsLeft, packageProgress, compact = false }: {
+function ClientDetail({ selected, pastVisits, futureVisits, compact = false, onRefresh }: {
   selected: typeof clients[0];
   pastVisits: ReturnType<typeof getClientVisits>;
   futureVisits: ReturnType<typeof getClientVisits>;
-  visitsLeft: number | null;
-  packageProgress: number;
   compact?: boolean;
+  onRefresh?: () => void;
 }) {
   const pastLimit = compact ? 5 : 20;
+  const activePackages = getActivePackages(selected);
+  const exhaustedPackages = selected.packages.filter((p) => p.visitsUsed >= p.size);
 
   return (
     <div className="space-y-4">
@@ -56,38 +57,59 @@ function ClientDetail({ selected, pastVisits, futureVisits, visitsLeft, packageP
         )}
       </div>
 
-      {/* Active Package */}
-      <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-2">
+      {/* All Packages */}
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">Active Package</span>
+            <span className="text-sm font-medium">Packages ({selected.packages.length})</span>
           </div>
-          {selected.activePackage && (
-            <Badge variant="secondary">{selected.activePackage}</Badge>
-          )}
         </div>
-        {selected.activePackage && selected.packageSize ? (
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{selected.visitsUsed || 0} used</span>
-              <span>{visitsLeft} remaining</span>
-            </div>
-            <Progress value={packageProgress} className="h-2" />
-            {visitsLeft === 0 && (
-              <p className="text-xs text-destructive font-medium mt-1">
-                Package completed — time to renew
-              </p>
-            )}
+
+        {activePackages.length > 0 && (
+          <div className="space-y-2">
+            {activePackages.map((pkg) => {
+              const left = Math.max(0, pkg.size - pkg.visitsUsed);
+              const progress = Math.round((pkg.visitsUsed / pkg.size) * 100);
+              return (
+                <div key={pkg.id} className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{pkg.name}</span>
+                    <Badge variant="secondary" className="text-xs">{left} left</Badge>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{pkg.visitsUsed} used</span>
+                    <span>{pkg.size} total</span>
+                  </div>
+                  <Progress value={progress} className="h-1.5" />
+                </div>
+              );
+            })}
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">No active package</p>
         )}
+
+        {exhaustedPackages.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Completed</p>
+            {exhaustedPackages.map((pkg) => (
+              <div key={pkg.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
+                <span className="text-muted-foreground">{pkg.name}</span>
+                <span className="text-destructive">Done</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selected.packages.length === 0 && (
+          <p className="text-xs text-muted-foreground">No packages assigned</p>
+        )}
+
         <AssignPackageDialog
           preselectedClientId={selected.id}
+          onAssigned={onRefresh}
           trigger={
-            <Button variant="outline" size="sm" className="w-full gap-1 mt-2 text-xs">
-              <Package className="w-3 h-3" /> {selected.activePackage ? "Change Package" : "Assign Package"}
+            <Button variant="outline" size="sm" className="w-full gap-1 mt-1 text-xs">
+              <Package className="w-3 h-3" /> Add Package
             </Button>
           }
         />
@@ -153,7 +175,9 @@ export default function Clients() {
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [fullViewClient, setFullViewClient] = useState<string | null>(null);
-  const [, forceUpdate] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = () => setRefreshKey((n) => n + 1);
 
   const filtered = clients.filter(
     (c) =>
@@ -169,24 +193,20 @@ export default function Clients() {
     const pastVisits = allVisits.filter((v) => v.date <= today).sort((a, b) => b.date.localeCompare(a.date));
     const futureVisits = allVisits.filter((v) => v.date > today).sort((a, b) => a.date.localeCompare(b.date));
     const client = clients.find((c) => c.id === clientId)!;
-    const visitsLeft = client.packageSize && client.visitsUsed !== undefined
-      ? Math.max(0, client.packageSize - client.visitsUsed) : null;
-    const packageProgress = client.packageSize
-      ? Math.round(((client.visitsUsed || 0) / client.packageSize) * 100) : 0;
-    return { pastVisits, futureVisits, visitsLeft, packageProgress, client };
+    return { pastVisits, futureVisits, client };
   }
 
   const sidebarData = selectedClient ? getVisitData(selectedClient) : null;
   const fullViewData = fullViewClient ? getVisitData(fullViewClient) : null;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in" key={refreshKey}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold">Clients</h1>
           <p className="text-muted-foreground mt-1">Manage your patient directory</p>
         </div>
-        <AddClientDialog onClientAdded={() => forceUpdate((n) => n + 1)} />
+        <AddClientDialog onClientAdded={refresh} />
       </div>
 
       <div className="relative max-w-md">
@@ -207,14 +227,13 @@ export default function Clients() {
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Name</th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Phone</th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Visits</th>
-                <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Package</th>
+                <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Packages</th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">Last Visit</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((client) => {
-                const left = client.packageSize && client.visitsUsed !== undefined
-                  ? Math.max(0, client.packageSize - client.visitsUsed) : null;
+                const active = getActivePackages(client);
                 return (
                   <tr
                     key={client.id}
@@ -235,14 +254,13 @@ export default function Clients() {
                     <td className="p-4 text-sm text-muted-foreground">{client.phone || "—"}</td>
                     <td className="p-4 text-sm">{client.totalVisits}</td>
                     <td className="p-4">
-                      {client.activePackage ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">{client.activePackage}</span>
-                          {left !== null && (
-                            <span className={`text-xs font-medium ${left === 0 ? "text-destructive" : "text-primary"}`}>
-                              {left} left
+                      {active.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {active.map((p) => (
+                            <span key={p.id} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                              {p.name} ({Math.max(0, p.size - p.visitsUsed)})
                             </span>
-                          )}
+                          ))}
                         </div>
                       ) : <span className="text-muted-foreground text-sm">—</span>}
                     </td>
@@ -259,12 +277,7 @@ export default function Clients() {
           {sidebarData ? (
             <div>
               <div className="flex justify-end mb-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs"
-                  onClick={() => setFullViewClient(selectedClient)}
-                >
+                <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setFullViewClient(selectedClient)}>
                   <ExternalLink className="w-3 h-3" /> Full View
                 </Button>
               </div>
@@ -272,8 +285,7 @@ export default function Clients() {
                 selected={sidebarData.client}
                 pastVisits={sidebarData.pastVisits}
                 futureVisits={sidebarData.futureVisits}
-                visitsLeft={sidebarData.visitsLeft}
-                packageProgress={sidebarData.packageProgress}
+                onRefresh={refresh}
                 compact
               />
             </div>
@@ -294,8 +306,7 @@ export default function Clients() {
               selected={fullViewData.client}
               pastVisits={fullViewData.pastVisits}
               futureVisits={fullViewData.futureVisits}
-              visitsLeft={fullViewData.visitsLeft}
-              packageProgress={fullViewData.packageProgress}
+              onRefresh={refresh}
             />
           )}
         </DialogContent>
