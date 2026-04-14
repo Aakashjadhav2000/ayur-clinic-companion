@@ -80,7 +80,7 @@ export default function ReachOut() {
   const markDidntAnswer = (clientId: string) => {
     setDismissed((prev) => [
       ...prev.filter((d) => d.clientId !== clientId),
-      { clientId, dismissedAt: new Date(), reason: "no_answer" },
+      { clientId, dismissedAt: new Date().toISOString(), reason: "no_answer" },
     ]);
     toast("Moved to Didn't Answer — will retry in 15 days");
   };
