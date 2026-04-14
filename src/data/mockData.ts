@@ -1,9 +1,17 @@
+export interface PackageComponent {
+  type: string; // e.g. "Consultation (Pre)", "Abhyanga", "Shirodhara"
+  total: number;
+  used: number;
+  duration: number; // minutes
+}
+
 export interface ClientPackage {
   id: string;
   name: string;
   size: number;
   visitsUsed: number;
   price?: number;
+  components?: PackageComponent[]; // For Panchakarma-style multi-component packages
 }
 
 export interface Client {
