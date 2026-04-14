@@ -79,7 +79,9 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
   const [visitSubType, setVisitSubType] = useState("consultation"); // id from the type arrays
   const [notes, setNotes] = useState("");
   const [clientSearch, setClientSearch] = useState("");
-  const [selectedPkgId, setSelectedPkgId] = useState(""); // existing package or "ntp"
+  const [selectedPkgId, setSelectedPkgId] = useState(""); // existing package or "ntp" or "comp_xxx"
+  const [compSearch, setCompSearch] = useState("");
+  const [compExpanded, setCompExpanded] = useState(false);
 
   const addVisit = useVisitsStore((s) => s.addVisit);
   const visits = useVisitsStore((s) => s.visits);
@@ -281,6 +283,8 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
     setNotes("");
     setClientSearch("");
     setSelectedPkgId("");
+    setCompSearch("");
+    setCompExpanded(false);
   };
 
   const overlapWarning = date && startTime ? checkOverlap() : null;
@@ -466,50 +470,101 @@ export default function BookingDialog({ defaultDate, trigger, preselectedClientI
                   );
                 })}
 
-                {/* Complimentary Visit Option — from any client's Pack of 5 */}
-                {visitCategory === "consultation" && (() => {
-                  // Find all clients with Pack of 5 that have complimentary visits left
-                  const compPkgs = clients.flatMap((c) =>
-                    c.packages
-                      .filter((p) => (p.complimentaryTotal || 0) > 0 && (p.complimentaryUsed || 0) < (p.complimentaryTotal || 0))
-                      .map((p) => ({ pkg: p, owner: c }))
-                  );
-                  if (compPkgs.length === 0) return null;
+                {/* Complimentary Visit — search for package owner */}
+                {visitCategory === "consultation" && (
+                  <div className="space-y-2 pt-1">
+                    {!compExpanded && !selectedPkgId.startsWith("comp_") ? (
+                      <button
+                        onClick={() => setCompExpanded(true)}
+                        className="flex items-center gap-2 w-full p-3 rounded-lg border border-dashed border-border text-left hover:bg-muted transition-all text-sm text-muted-foreground"
+                      >
+                        <span className="text-base">🎁</span>
+                        Use Complimentary Visit (from another client's package)
+                      </button>
+                    ) : (
+                      <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">🎁 Complimentary Visit</p>
+                          <button onClick={() => { setCompExpanded(false); setCompSearch(""); if (selectedPkgId.startsWith("comp_")) setSelectedPkgId(""); }}
+                            className="text-xs text-muted-foreground hover:text-foreground">✕ Close</button>
+                        </div>
 
-                  return (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1.5 pt-2">
-                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">Complimentary Visits</span>
-                        <span className="text-[10px] text-muted-foreground">— from another client's package</span>
-                      </div>
-                      {compPkgs.map(({ pkg, owner }) => {
-                        const compLeft = (pkg.complimentaryTotal || 0) - (pkg.complimentaryUsed || 0);
-                        const pkgKey = `comp_${pkg.id}`;
-                        return (
-                          <button key={pkgKey}
-                            onClick={() => setSelectedPkgId(pkgKey)}
-                            className={cn(
-                              "flex items-center justify-between w-full p-3 rounded-lg border text-left transition-all",
-                              selectedPkgId === pkgKey ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "border-border hover:bg-muted"
-                            )}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-700">
-                                {owner.firstName[0]}{owner.lastName[0]}
+                        {/* Show selected complimentary if any */}
+                        {selectedPkgId.startsWith("comp_") ? (() => {
+                          const realId = selectedPkgId.replace("comp_", "");
+                          const ownerEntry = clients.flatMap((c) => c.packages.filter((p) => p.id === realId).map((p) => ({ pkg: p, owner: c }))).find(Boolean);
+                          if (!ownerEntry) return null;
+                          const { pkg, owner } = ownerEntry;
+                          const compLeft = (pkg.complimentaryTotal || 0) - (pkg.complimentaryUsed || 0);
+                          return (
+                            <div className="flex items-center justify-between p-2 rounded-md bg-accent/50">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                                  {owner.firstName[0]}{owner.lastName[0]}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{owner.firstName} {owner.lastName}</p>
+                                  <p className="text-xs text-muted-foreground">{pkg.name} · {compLeft} comp. left</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium">Complimentary Visit</p>
-                                <p className="text-xs text-muted-foreground">
-                                  From {owner.firstName} {owner.lastName}'s {pkg.name} · {compLeft} left
-                                </p>
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-primary" />
+                                <button onClick={() => { setSelectedPkgId(""); setCompSearch(""); }} className="text-xs text-muted-foreground hover:text-foreground">Change</button>
                               </div>
                             </div>
-                            {selectedPkgId === pkgKey && <CheckCircle className="w-4 h-4 text-emerald-600" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                          );
+                        })() : (
+                          <>
+                            <Input
+                              placeholder="Search package owner by name or phone..."
+                              value={compSearch}
+                              onChange={(e) => setCompSearch(e.target.value)}
+                              className="h-9 text-sm"
+                            />
+                            {compSearch.trim() && (() => {
+                              const query = compSearch.toLowerCase();
+                              const results = clients.flatMap((c) =>
+                                c.packages
+                                  .filter((p) => (p.complimentaryTotal || 0) > 0 && (p.complimentaryUsed || 0) < (p.complimentaryTotal || 0))
+                                  .map((p) => ({ pkg: p, owner: c }))
+                              ).filter(({ owner }) =>
+                                `${owner.firstName} ${owner.lastName}`.toLowerCase().includes(query) ||
+                                owner.phone.includes(query)
+                              );
+
+                              if (results.length === 0) {
+                                return <p className="text-xs text-muted-foreground py-2">No clients with available complimentary visits found</p>;
+                              }
+
+                              return (
+                                <div className="max-h-32 overflow-y-auto border border-border rounded-md">
+                                  {results.slice(0, 10).map(({ pkg, owner }) => {
+                                    const compLeft = (pkg.complimentaryTotal || 0) - (pkg.complimentaryUsed || 0);
+                                    return (
+                                      <button
+                                        key={pkg.id}
+                                        onClick={() => { setSelectedPkgId(`comp_${pkg.id}`); setCompSearch(""); }}
+                                        className="w-full flex items-center gap-2 p-2 hover:bg-muted transition-colors text-left"
+                                      >
+                                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                                          {owner.firstName[0]}{owner.lastName[0]}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">{owner.firstName} {owner.lastName}</p>
+                                          <p className="text-[10px] text-muted-foreground">{pkg.name} · {compLeft} comp. left</p>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* NTP Option */}
                 <button onClick={() => setSelectedPkgId("ntp")}
