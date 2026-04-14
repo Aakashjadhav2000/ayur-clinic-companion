@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Phone, PhoneOff, PhoneMissed, CalendarCheck, Clock, Mail, RotateCcw } from "lucide-react";
-import { clients, getClientVisits, type Client } from "@/data/mockData";
+import { clients, type Client } from "@/data/mockData";
+import { useVisitsStore } from "@/stores/visitsStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
